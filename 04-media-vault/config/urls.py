@@ -1,15 +1,32 @@
+"""
+URL configuration for config project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/6.0/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-from api.urls import router
+from api.urls import router as api_router
 from config.views import liveness, readiness
 
 urlpatterns = [
     path("", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
-    path("django-rq/", include("django_rq.urls")),
-    path(router.prefix, include((router.urls, "api"), namespace="api")),
     path("healthz", liveness, name="healthz"),
     path("readyz", readiness, name="readyz"),
+    path("django-rq/", include("django_rq.urls")),
+    path(api_router.prefix, include((api_router.urls, "api"), namespace="api")),
 ]

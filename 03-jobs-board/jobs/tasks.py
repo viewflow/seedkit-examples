@@ -1,8 +1,15 @@
+import logging
+
 from celery import shared_task
+
+logger = logging.getLogger(__name__)
+
+
+@shared_task
+def send_job_notification(job_id):
+    logger.info("Notifying subscribers about job %s", job_id)
 
 
 @shared_task
 def send_daily_digest():
-    """Send the daily job digest email to subscribers."""
-    # TODO: query active Job listings and email subscribers
-    return "daily digest sent"
+    logger.info("Sending daily job digest")

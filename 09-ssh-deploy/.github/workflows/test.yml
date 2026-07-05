@@ -21,7 +21,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       redis:
-        image: redis:7
+        image: redis:8
         ports:
           - 6379:6379
         options: >-
@@ -32,15 +32,21 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      DJANGO_SECRET_KEY: test-key
+      # 50+ chars, 5+ unique, no "django-insecure-" prefix — Django's
+      # security.W009 check flags that prefix regardless of length.
+      DJANGO_SECRET_KEY: ci-placeholder-not-a-real-secret-key-0123456789abcdefghij
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
       REDIS_URL: redis://localhost:6379
+      AWS_ACCESS_KEY_ID: ci-placeholder
+      AWS_SECRET_ACCESS_KEY: ci-placeholder
+      DBBACKUP_BUCKET: ci-placeholder
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 
@@ -49,12 +55,10 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
 
+      # Catches security-setting regressions (SSL_REDIRECT without proxy,
+      # missing HSTS, etc.) at CI time instead of first-deploy.
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
-          DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
-          AWS_ACCESS_KEY_ID: ci-placeholder
-          AWS_SECRET_ACCESS_KEY: ci-placeholder
-          DBBACKUP_BUCKET: ci-placeholder
 
       - run: uv run pytest

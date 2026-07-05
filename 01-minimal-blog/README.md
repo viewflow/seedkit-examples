@@ -19,6 +19,45 @@ Structured logging: no.
 Task runner: none.
 Add-ons:
   - email: console backend (`EMAIL_URL=consolemail://`).
+  - HTML email base template: no.
+  - CORS: no.
+  - REST API: none.
+  - Frontend: none.
+  - Auth hardening: N/A (auth = none).
+  - Health check endpoints: no (this case is the bare floor — no extra views).
+  - robots.txt: no.
+  - django-extensions: no.
+  - Devcontainer: no.
+
+Production setup: skip.
+
+Run the foundation, the boot check (migrate + createsuperuser), and confirm /admin/ login works.
+```
+
+---
+
+## Prompt
+
+```
+/seedkit
+
+Project name: 01-minimal-blog
+Purpose: a tiny blog to verify the skill works end-to-end.
+
+Settings layout: single file (`config/settings.py`).
+Database: SQLite.
+Lint with Ruff: no.
+Test runner: manage.py test (stock Django).
+Type check (pyright + django-stubs): no.
+Pre-commit hooks: no.
+Internationalisation (i18n): no.
+Custom user model: no.
+Auth add-on: none (vanilla `django.contrib.auth`).
+Structured logging: no.
+Task runner: none.
+Add-ons:
+  - email: console backend (`EMAIL_URL=consolemail://`).
+  - HTML email base template: no.
   - CORS: no.
   - REST API: none.
   - Frontend: none.
@@ -46,6 +85,7 @@ A tiny blog — the bare minimum Django project to verify the seedkit skill work
 | Framework | Django 6 |
 | Settings | Single `config/settings.py` via `django-environ` |
 | Database | SQLite (`db.sqlite3`) |
+| Request handling | WSGI |
 | Email | Console backend (stdout) |
 | Auth | Vanilla `django.contrib.auth` |
 | Frontend | None |

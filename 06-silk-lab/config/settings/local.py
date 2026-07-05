@@ -1,17 +1,16 @@
 from .base import *
-from .base import INSTALLED_APPS, MIDDLEWARE
 
 if DEBUG:
     INSTALLED_APPS += ["silk"]
+    # AFTER SecurityMiddleware, not before — prepending at index 0 routes
+    # the profiler around Django's security headers on every request.
     sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
     MIDDLEWARE.insert(sec_idx + 1, "silk.middleware.SilkyMiddleware")
 
     INSTALLED_APPS += ["zeal"]
-    MIDDLEWARE += ["zeal.middleware.zeal_middleware"]
+    MIDDLEWARE += ["zeal.middleware.zeal_middleware"]  # required to scope detection per request
     ZEAL_RAISE_ON_VIOLATION = True
 
-    INSTALLED_APPS += ["django_migration_linter"]
-    INSTALLED_APPS += ["django_extensions"]
+    INSTALLED_APPS += ["django_migration_linter"]  # registers the `lintmigrations` command
 
-SILKY_MAX_RECORDED_REQUESTS = 1000
-SILKY_MAX_RECORDED_REQUESTS_CHECK_PERCENT = 10
+    INSTALLED_APPS += ["django_extensions"]

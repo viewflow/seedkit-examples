@@ -1,6 +1,6 @@
 {% if ANALYTICS_ID and not DEBUG %}
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ ANALYTICS_ID }}"></script>
-<script>
+<script nonce="{{ request.csp_nonce }}">
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());

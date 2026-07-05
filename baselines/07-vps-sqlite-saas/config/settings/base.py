@@ -163,11 +163,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Email (overridden per environment)
 DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="noreply@example.com")
 SERVER_EMAIL = env.str("SERVER_EMAIL", default="errors@example.com")
-ADMINS = [
-    (name, addr)
-    for entry in env.list("DJANGO_ADMINS", default=[])
-    for name, addr in [entry.split(":", 1)]
-]
+ADMINS = [(name, addr) for entry in env.list("DJANGO_ADMINS", default=[]) for name, addr in [entry.split(":", 1)]]
 
 # CSP (permissive defaults; tighten in production.py)
 CSP_DEFAULT_SRC = ("'self'",)

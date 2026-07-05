@@ -1,48 +1,10 @@
-# Python
+.venv/
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.Python
-*.egg
-*.egg-info/
-dist/
-build/
-eggs/
-parts/
-var/
-sdist/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-.installed.cfg
-lib/
-lib64/
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-
-# Environment
-.env
-
-# Django
 *.sqlite3
+.env
 staticfiles/
 media/
-local_settings.py
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# Cache
 .ruff_cache/
-.mypy_cache/
-.pytest_cache/
+*.egg-info/
+.DS_Store

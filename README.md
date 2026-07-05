@@ -21,7 +21,7 @@ Each subdirectory is a fresh project generated end-to-end by `claude -p` running
 From the parent repo:
 
 ```sh
-cd seedkit
+cd seedkit/train
 ./run-tests.sh                  # all cases
 ./run-tests.sh 02 07            # specific cases
 ```

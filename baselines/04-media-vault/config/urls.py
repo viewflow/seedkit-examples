@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.urls import include, path
-
 from health_check.views import HealthCheckView
 
 urlpatterns = [

@@ -22,6 +22,7 @@ Add-ons:
   - redis (for Celery)
   - tasks: Celery, with periodic tasks (Celery Beat). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, and add a sample `@shared_task` to `jobs/tasks.py` referenced from `CELERY_BEAT_SCHEDULE`.
   - email: console backend in local (`EMAIL_URL=consolemail://`).
+  - HTML email base template: no.
   - CORS: no.
   - REST API: none.
   - Frontend: none.
@@ -44,59 +45,68 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- **Django 6** + **PostgreSQL** (Docker) + **Redis** (Docker)
-- **django-mail-auth** — passwordless magic-link authentication
-- **Celery** + **Celery Beat** — background tasks and periodic digest
-- **django-redis** — shared Redis cache
-- **i18n** — gettext / LocaleMiddleware
-- Health checks at `/healthz` and `/readyz`
-
-## Requirements
-
-- [uv](https://docs.astral.sh/uv/)
-- [just](https://github.com/casey/just)
-- Docker
+- Django 6, single-file settings (`config/settings.py`), `django-environ` for config.
+- PostgreSQL in Docker (`docker-compose.yml`, published on `127.0.0.1:5432`).
+- Auth: `django-mail-auth` (passwordless magic-link), `mailauth.contrib.user.EmailUser`.
+- Background tasks: Celery + Celery Beat, Redis broker (`docker-compose.yml`, `127.0.0.1:6379`).
+- Email: console backend in dev (`EMAIL_URL=consolemail://`).
+- i18n enabled (`LANGUAGES`, `LocaleMiddleware`, `LOCALE_PATHS`).
+- Health checks: `/healthz`, `/readyz`.
+- Task runner: `just`.
+- Tests: stock `manage.py test`.
 
 ## Setup
 
 ```sh
-cp .env.example .env           # edit DJANGO_SECRET_KEY
-docker compose up -d --wait    # start Postgres + Redis
+cp .env.example .env   # then edit DJANGO_SECRET_KEY for a real deploy
+docker compose up -d
+just install
 just migrate
 just superuser
 just dev
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in with the superuser credentials.
+Open <http://127.0.0.1:8000/admin/> and sign in with the superuser you just created.
+
+In separate terminals, run the Celery worker and beat scheduler:
+
+```sh
+just worker
+just beat
+```
 
 ## Key commands
 
 | Task | Command |
-|---|---|
-| Install deps | `just install` |
-| Run dev server | `just dev` |
-| Apply migrations | `just migrate` |
-| Make migrations | `just makemigrations` |
-| Django shell | `just shell` |
-| Create superuser | `just superuser` |
-| Run tests | `just test` |
-| Celery worker | `just worker` |
-| Celery Beat | `just beat` |
+| --- | --- |
+| `just install` | `uv sync` |
+| `just dev` | `uv run manage.py runserver` |
+| `just migrate` | `uv run manage.py migrate` |
+| `just makemigrations` | `uv run manage.py makemigrations` |
+| `just shell` | `uv run manage.py shell` |
+| `just superuser` | `uv run manage.py createsuperuser` |
+| `just test` | `uv run manage.py test` |
+| `just worker` | `uv run celery -A config worker -l info` |
+| `just beat` | `uv run celery -A config beat -l info` |
 
-Fallback (no `just`): `uv run manage.py <command>`
+No task runner installed? Fall back to `uv run manage.py <command>`.
 
 ## Background tasks
 
-- `jobs.tasks.send_daily_digest` — triggered daily at 08:00 via Beat, sends the job digest to subscribers.
-- Run `just worker` and `just beat` alongside `just dev` for local testing.
+`jobs/tasks.py` defines two sample `@shared_task` functions:
+
+- `send_job_notification(job_id)` — ad-hoc task, call from views/signals when a job posting needs a notification sent.
+- `send_daily_digest()` — scheduled via `CELERY_BEAT_SCHEDULE` in `config/settings.py` (runs daily at 08:00 UTC).
+
+Drop real notification/digest logic into `jobs/tasks.py` as the job board grows.
 
 ## i18n
 
 ```sh
-uv run manage.py makemessages -l de   # add a language
+uv run manage.py makemessages -l de
 uv run manage.py compilemessages
 ```
 
-Commit `.po` files; `.mo` files are compiled at deploy time.
+Requires GNU gettext installed on the host (`brew install gettext` / `apt-get install gettext`).
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

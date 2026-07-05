@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.contrib.auth.forms import ReadOnlyPasswordHashField, UserChangeForm, UserCreationForm
+from django.contrib.auth.forms import (
+    ReadOnlyPasswordHashField,
+    UserChangeForm,
+    UserCreationForm,
+)
 
 from .models import User
 
@@ -14,6 +18,12 @@ class UserCreationFormEmail(UserCreationForm):
 class UserChangeFormEmail(UserChangeForm):
     class Meta(UserChangeForm.Meta):
         model = User
+        # Parent pins {"username": UsernameField, "password": ReadOnlyPasswordHashField}.
+        # Drop username (the model has no such field) but KEEP the password mapping.
+        # ReadOnlyPasswordHashField is what shows the hash + "change password" link
+        # in admin. Without it the password field is editable plain text and saving
+        # the user form silently overwrites user.password with whatever was typed,
+        # breaking login.
         field_classes = {"password": ReadOnlyPasswordHashField}
 
 

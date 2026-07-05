@@ -49,100 +49,69 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `docker-compose.
 
 # 09-ssh-deploy
 
-Production Django app deployed to a remote host over SSH from GitHub Actions, using self-hosted services.
+Production app deployed to a remote host over SSH from GitHub Actions, using self-hosted services.
 
 ## Stack
 
-- **Django 6** · split settings (local / production / test)
-- **PostgreSQL 17** (Docker in dev, VPS container in prod)
-- **Redis 7** — cache (`/0`) + RQ task queue (`/3`)
-- **Django Tasks + django-tasks-rq** — background tasks via RQ
-- **structlog** — JSON in prod, pretty console in dev, per-request `request_id`
-- **django-csp** — Content Security Policy in production
-- **sentry-sdk** — Bugsink (self-hosted) error reporting
-- **django-dbbackup** — daily DB backups to S3-compatible storage
-- **Umami** (self-hosted) — cookieless analytics
-- **Gunicorn** — WSGI server; **Caddy** — TLS + reverse proxy
-- **Ruff** — lint + format; **pytest** — tests
-- **mise** — task runner; **GitHub Actions** — CI + SSH deploy
+- Django 6, split settings (`config/settings/{base,local,production,test}.py`)
+- PostgreSQL 17, Postgres-in-Docker for local dev (`docker-compose.yml`)
+- Redis — cache + Django Tasks RQ broker
+- Django Tasks with the Redis Queue backend (`django-tasks-rq` + `django-rq`); tasks live in `jobs/tasks.py`
+- Structured logging via `structlog` + `django-structlog` — pretty console in dev, JSON in prod, per-request `request_id`
+- Analytics: Umami (self-hosted, env-driven website id and host)
+- Health checks: `/healthz` (liveness), `/readyz` (DB reachable)
+- Lint: Ruff. Tests: pytest + pytest-django. No type checking, no pre-commit hooks, no i18n, no custom user model, no auth add-on.
+- Task runner: mise (`mise.toml`)
+- Security: Django's HSTS / secure-cookie / SSL-redirect settings + `django-csp` in `config/settings/production.py`
+- Error reporting: Bugsink (self-hosted, Sentry-protocol) via `sentry-sdk`, with PII scrubbing (GDPR)
+- User data export/delete management commands (`jobs/management/commands/`) for GDPR requests
+- Database backups: `django-dbbackup` to an S3-compatible bucket (self-managed host, no native backup service)
+- CI: GitHub Actions test workflow
+- Deploy: GitHub Actions over SSH (rsync-free — builds + pushes a GHCR image, then `docker compose pull && migrate && up -d` on the host)
+- Production Dockerfile: multi-stage — uv builder → `python:3.12-slim-bookworm` runtime
 
-## Quick start
+## Local dev ports
+
+This dev machine already runs native Postgres (5432) and Redis (6379) outside Docker, so the local `docker-compose.yml` remaps to avoid bind conflicts:
+
+- Postgres: `127.0.0.1:5435` → container `5432`
+- Redis: `127.0.0.1:6381` → container `6379`
+
+Adjust `DATABASE_URL` / `REDIS_URL` in `.env` (and the port mappings in `docker-compose.yml`) if your machine is free of conflicts and you'd rather use the standard `5432` / `6379`.
+
+## Key commands
 
 ```sh
-mise trust && mise install   # installs Python 3.12 via mise
-cp .env.example .env         # edit DJANGO_SECRET_KEY at minimum
-docker compose up -d         # starts db (port 5433) + redis
+cp .env.example .env          # then set a real DJANGO_SECRET_KEY
+mise trust && mise install
+mise run install
+docker compose up -d           # db + redis
 mise run migrate
-mise run dev
+mise run superuser
+mise run dev                    # runserver
+mise run worker                 # rqworker default, in a second terminal
+mise run test
+mise run lint
+mise run fmt
 ```
 
-Open <http://localhost:8000/admin/>
-
-## Common tasks
-
-| Task | Command |
-|---|---|
-| Run dev server | `mise run dev` |
-| Run migrations | `mise run migrate` |
-| Run tests | `mise run test` |
-| Lint | `mise run lint` |
-| Format | `mise run fmt` |
-| Background worker | `mise run worker` |
-| Create superuser | `mise run superuser` |
-
-Fallback (no mise): `uv run manage.py <command>`
-
-## Health checks
-
-- `GET /healthz` — liveness (process alive)
-- `GET /readyz` — readiness (DB reachable)
+Fallback without mise: `uv run manage.py <command>` for every task above.
 
 ## Deploy
 
-Automated via GitHub Actions on push to `main`. Requires three repository secrets:
+Secrets set in repo settings: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `GHCR_TOKEN` (a PAT with `read:packages`, used by the **server** to pull private images).
 
-- `SSH_HOST` — VPS IP or hostname
-- `SSH_USER` — SSH user on the VPS
-- `SSH_KEY` — private key for SSH access
-- `GHCR_TOKEN` — PAT with `read:packages` for the VPS to pull the image
-
-### First-time VPS setup
+First deploy — create `deploy/.env.prod` on the host from `deploy/.env.prod.example`, then:
 
 ```sh
-ssh $SSH_USER@$SSH_HOST
-mkdir -p /srv/09-ssh-deploy/deploy
+ssh user@host
 cd /srv/09-ssh-deploy
-cp deploy/.env.prod.example deploy/.env.prod
-# edit deploy/.env.prod with real values
+export GITHUB_REPOSITORY=owner/repo
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml pull
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d
 ```
 
-### Manual deploy
-
-```sh
-mise run deploy-migrate   # runs migrate in prod container
-mise run deploy           # docker compose up -d
-```
-
-## Database backups
-
-`django-dbbackup` dumps to an S3-compatible bucket daily. Configure in `deploy/.env.prod`:
-
-```sh
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-DBBACKUP_BUCKET=
-```
-
-Manual backup: `docker compose exec -T web python manage.py dbbackup --clean`
-
-## GDPR management commands
-
-```sh
-# Export all data for a user
-uv run manage.py export_user_data <user_id>
-
-# Permanently delete a user and all related data
-uv run manage.py delete_user_data <user_id>
-```
+After that, `.github/workflows/deploy.yml` handles every push to `main`: it builds + pushes the image to GHCR, then SSHes in to pull, migrate, and restart. Database backups run via `django-dbbackup` — schedule `dbbackup` / `mediabackup` with a cron line on the host (see `references/dbbackup.md` in the seedkit skill for the exact crontab).
 
 Built with [Seedkit](https://github.com/RobustaRush/seedkit).

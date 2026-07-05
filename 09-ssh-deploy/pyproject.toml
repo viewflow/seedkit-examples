@@ -6,28 +6,24 @@ dependencies = [
     "django>=6.0,<7.0",
     "django-csp>=4.0",
     "django-dbbackup>=5.3.0",
-    "django-environ>=0.13.0",
-    "django-redis>=6.0.0",
-    "django-rq>=4.1.0",
+    "django-environ>=0.14.0",
+    "django-redis>=7.0.0",
+    "django-rq>=4.1.1",
     "django-storages[s3]>=1.14.6",
-    "django-structlog>=10.0.0",
+    "django-structlog>=10.1.0",
     "django-tasks-rq>=0.12.0",
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
-    "sentry-sdk>=2.60.0",
-    "structlog>=25.5.0",
+    "sentry-sdk>=2.64.0",
+    "structlog>=26.1.0",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
     "pytest-django>=4.12.0",
-    "ruff>=0.15.13",
+    "ruff>=0.15.20",
 ]
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.test"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.ruff]
 line-length = 100
@@ -35,30 +31,34 @@ extend-exclude = ["migrations", "*/migrations/*"]
 
 [tool.ruff.lint]
 select = [
-    "E", "W",
-    "F",
-    "I",
-    "UP",
-    "B",
-    "DJ",
-    "S",
-    "SIM",
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "UP",       # pyupgrade
+    "B",        # flake8-bugbear
+    "DJ",       # flake8-django
+    "S",        # flake8-bandit
+    "SIM",      # flake8-simplify
     "RUF",
 ]
 ignore = [
-    "E501",
-    "S101",
-    "RUF012",
+    "E501",     # line length — formatter handles it
+    "S101",     # assert — fine in tests
+    "RUF012",   # mutable class attrs — Django idiom (Meta.fields, REQUIRED_FIELDS, list_display, fieldsets, …)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S"]
-"**/test_*.py" = ["S"]
-"**/tests.py" = ["S"]
+"**/tests/**"      = ["S"]
+"**/test_*.py"     = ["S"]
+"**/tests.py"      = ["S"]
 "**/settings/*.py" = ["F405", "F403", "S105", "S106"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["jobs", "config"]
+known-first-party = ["config", "jobs"]
 
 [tool.ruff.format]
 quote-style = "double"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]

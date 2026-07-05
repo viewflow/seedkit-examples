@@ -1,15 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environment
 .venv/
-.env
+
+# Django
 *.sqlite3
 staticfiles/
 media/
-.ruff_cache/
-__pycache__/
-*.pyc
-*.pyo
-.pytest_cache/
-.mypy_cache/
-dist/
-*.egg-info/
 celerybeat-schedule*
-locale/*/LC_MESSAGES/*.mo
+
+# Env
+.env
+
+# i18n compiled catalogs
+*.mo
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/

@@ -1,11 +1,14 @@
-example.com {
+example.com {     # replace with the real domain — Caddy fails to issue TLS for example.com
     handle /media/* {
-        uri strip_prefix /media
+        uri strip_prefix /media   # without this, file_server resolves /srv/media/media/<file>
         root * /srv/media
         file_server
     }
-
     reverse_proxy web:8000 {
+        # Probe `/healthz` (process up) — NOT `/readyz` (DB+deps).
+        # A transient DB blip on /readyz flips the upstream to "down" and
+        # Caddy stops serving 200s; better to let /readyz feed monitoring
+        # while the load-balancer probe stays liveness-only.
         health_uri /healthz
         health_interval 10s
         health_timeout 3s

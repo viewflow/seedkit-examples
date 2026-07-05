@@ -6,7 +6,7 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Export all data for a user (GDPR subject access request)"
+    """GDPR data-portability helper: dump a user's own record as JSON."""
 
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)

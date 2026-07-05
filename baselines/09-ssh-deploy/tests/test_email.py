@@ -1,5 +1,5 @@
 """Verify the project does not send transactional email (dummy backend)."""
-import django.test
+
 import pytest
 from django.core import mail
 from django.test import override_settings
@@ -7,7 +7,6 @@ from django.test import override_settings
 
 def test_email_backend_setting():
     """Base settings configure the dummy backend (no transactional mail)."""
-    from django.conf import settings as django_settings
 
     # Read directly from the module, bypassing pytest-django's locmem override
     import config.settings.base as base_settings

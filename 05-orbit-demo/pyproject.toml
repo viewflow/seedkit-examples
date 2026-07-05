@@ -4,13 +4,13 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "django>=6.0,<7.0",
-    "django-environ>=0.13.0",
+    "django-environ>=0.14.0",
 ]
 
 [dependency-groups]
 dev = [
-    "django-orbit[mcp]>=0.8.1",
-    "ruff>=0.15.13",
+    "django-orbit[mcp]>=0.11.0",
+    "ruff>=0.15.20",
 ]
 
 [tool.ruff]
@@ -32,17 +32,17 @@ select = [
 ignore = [
     "E501",     # line length — formatter handles it
     "S101",     # assert — fine in tests
-    "RUF012",   # mutable class attrs — Django idiom
+    "RUF012",   # mutable class attrs — Django idiom (Meta.fields, REQUIRED_FIELDS, list_display, fieldsets, …)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**"    = ["S"]
-"**/test_*.py"   = ["S"]
-"**/tests.py"    = ["S"]
-"**/settings.py" = ["F405", "F403", "S105", "S106"]
+"**/tests/**"      = ["S"]
+"**/test_*.py"     = ["S"]
+"**/tests.py"      = ["S"]                   # Django's default `startapp` stub
+"**/settings.py"   = ["F405", "F403", "S105", "S106"]  # dev-only SECRET_KEY / password defaults
 
 [tool.ruff.lint.isort]
-known-first-party = ["config"]
+known-first-party = ["config", "mailer"]
 
 [tool.ruff.format]
 quote-style = "double"

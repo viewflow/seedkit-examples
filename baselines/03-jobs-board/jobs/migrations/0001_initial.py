@@ -4,28 +4,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Job',
+            name="Job",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200, verbose_name='title')),
-                ('company', models.CharField(max_length=200, verbose_name='company')),
-                ('description', models.TextField(verbose_name='description')),
-                ('contact_email', models.EmailField(max_length=254, verbose_name='contact email')),
-                ('published_at', models.DateTimeField(auto_now_add=True, verbose_name='published at')),
-                ('is_active', models.BooleanField(default=True, verbose_name='active')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=200, verbose_name="title")),
+                ("company", models.CharField(max_length=200, verbose_name="company")),
+                ("description", models.TextField(verbose_name="description")),
+                (
+                    "contact_email",
+                    models.EmailField(max_length=254, verbose_name="contact email"),
+                ),
+                (
+                    "published_at",
+                    models.DateTimeField(
+                        auto_now_add=True, verbose_name="published at"
+                    ),
+                ),
+                ("is_active", models.BooleanField(default=True, verbose_name="active")),
             ],
             options={
-                'verbose_name': 'job',
-                'verbose_name_plural': 'jobs',
-                'ordering': ['-published_at'],
+                "verbose_name": "job",
+                "verbose_name_plural": "jobs",
+                "ordering": ["-published_at"],
             },
         ),
     ]

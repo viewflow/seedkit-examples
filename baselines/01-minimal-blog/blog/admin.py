@@ -5,5 +5,5 @@ from .models import Post
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ['title', 'published_at', 'created_at']
-    prepopulated_fields = {'slug': ('title',)}
+    list_display = ["title", "published_at", "created_at"]
+    prepopulated_fields = {"slug": ("title",)}

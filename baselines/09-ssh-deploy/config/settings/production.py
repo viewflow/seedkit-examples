@@ -2,7 +2,6 @@ import logging
 
 import sentry_sdk
 import structlog
-from environs import Env
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.rq import RqIntegration

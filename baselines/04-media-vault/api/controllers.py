@@ -2,7 +2,6 @@ import uuid
 from http import HTTPStatus
 
 import msgspec
-
 from dmr import Body, Controller, ResponseSpec, modify
 from dmr.plugins.msgspec import MsgspecSerializer
 
@@ -18,9 +17,7 @@ class MediaUploadResponse(msgspec.Struct):
 
 
 class MediaController(Controller[MsgspecSerializer]):
-    responses = (
-        ResponseSpec(return_type=MediaUploadResponse, status_code=HTTPStatus.CREATED),
-    )
+    responses = (ResponseSpec(return_type=MediaUploadResponse, status_code=HTTPStatus.CREATED),)
 
     @modify(status_code=HTTPStatus.CREATED)
     def post(self, parsed_body: Body[MediaUploadRequest]) -> MediaUploadResponse:

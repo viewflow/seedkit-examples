@@ -1,9 +1,14 @@
 services:
   web:
-    image: ghcr.io/robustaru/02-shop:latest
+    image: ghcr.io/{owner}/02-shop:latest
     restart: unless-stopped
     env_file: .env.prod
+    volumes:
+      - media:/app/media
+      - backups:/app/backups
     healthcheck:
+      # python+urllib instead of curl — the prod image only installs
+      # postgresql-client and slim has no curl.
       test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/healthz\",timeout=2).status==200 else 1)'"]
       interval: 10s
       timeout: 3s
@@ -45,3 +50,4 @@ volumes:
   caddy_data:
   caddy_config:
   media:
+  backups:

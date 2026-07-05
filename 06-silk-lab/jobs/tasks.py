@@ -1,30 +1,18 @@
-from django.conf import settings
-from django.core.mail import send_mail
-from django.tasks import task
+import logging
 
-if settings.DEBUG:
-    from silk.profiling.profiler import silk_profile
-else:
-    class silk_profile:
-        def __init__(self, *_a, **_kw):
-            pass
+from django_tasks import task
 
-        def __call__(self, fn):
-            return fn
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_a):
-            return False
+logger = logging.getLogger(__name__)
 
 
 @task()
 def send_welcome_email(recipient: str) -> None:
-    with silk_profile(name="send_welcome_email"):
-        send_mail(
-            subject="Welcome!",
-            message="Thanks for signing up.",
-            from_email=None,
-            recipient_list=[recipient],
-        )
+    from django.core.mail import send_mail
+
+    send_mail(
+        subject="Welcome",
+        message=f"Thanks for signing up, {recipient}!",
+        from_email=None,
+        recipient_list=[recipient],
+    )
+    logger.info("Sent welcome email to %s", recipient)

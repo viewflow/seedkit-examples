@@ -14,8 +14,6 @@ from config.routing import websocket_router  # noqa: E402 — must come after ge
 application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
-        "websocket": AllowedHostsOriginValidator(
-            AuthMiddlewareStack(websocket_router)
-        ),
+        "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(websocket_router)),
     }
 )

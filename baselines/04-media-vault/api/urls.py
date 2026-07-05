@@ -1,5 +1,4 @@
 from django.urls import path
-
 from dmr.routing import Router
 
 from api.controllers import MediaController

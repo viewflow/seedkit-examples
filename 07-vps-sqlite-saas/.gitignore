@@ -1,15 +1,26 @@
-.venv/
-.env
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Django
 *.sqlite3
 staticfiles/
 media/
+
+# Environment
+.venv/
+.env
+
+# Tooling
 .ruff_cache/
 .pytest_cache/
 .mypy_cache/
-__pycache__/
-*.pyc
-*.pyo
-htmlcov/
-.coverage
-*.egg-info/
-dist/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
