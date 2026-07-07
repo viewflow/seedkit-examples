@@ -1,13 +1,8 @@
-.env
 __pycache__/
 *.py[cod]
-*.pyo
 .venv/
-venv/
-staticfiles/
-media/
-*.sqlite3
+.env
+db.sqlite3
+*.log
 .ruff_cache/
 .pytest_cache/
-dist/
-*.egg-info/

@@ -1,6 +1,6 @@
 import structlog
 
-from .base import *  # noqa: F401, F403
+from .base import *  # noqa: F401,F403
 
 DEBUG = True
 
@@ -25,21 +25,6 @@ LOGGING = {
         "handlers": ["console"],
         "level": "INFO",
     },
-    "loggers": {
-        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "django_structlog": {"handlers": ["console"], "level": "INFO", "propagate": False},
-    },
 }
 
-# Relax CSP in local development
-CONTENT_SECURITY_POLICY = {
-    "DIRECTIVES": {
-        "default-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:", "blob:"],
-    }
-}
-
-# Suppress missing staticfiles manifest errors locally
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

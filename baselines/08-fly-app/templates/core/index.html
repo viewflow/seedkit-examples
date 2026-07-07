@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>fly-app</h1>
+{% if user.is_authenticated %}
+<p>Signed in as {{ user.username }}.</p>
+<form method="post" action="{% url 'mailauth:logout' %}">
+    {% csrf_token %}
+    <button type="submit">Log out</button>
+</form>
+{% else %}
+<a href="{% url 'mailauth:login' %}">Log in</a>
+{% endif %}
+{% endblock %}

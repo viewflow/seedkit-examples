@@ -1,43 +1,24 @@
-app = "08-fly-app"
+app = "fly-app"
 primary_region = "iad"
 
 [build]
-  dockerfile = "Dockerfile"
-
-[env]
-  PORT = "8000"
-  DJANGO_BEHIND_PROXY = "True"
-
-# Secrets (set via `fly secrets set`):
-#   DJANGO_SECRET_KEY
-#   DJANGO_ALLOWED_HOSTS
-#   DJANGO_CSRF_TRUSTED_ORIGINS
-#   DATABASE_URL         — auto-set by `fly postgres attach`
-#   REDIS_URL            — auto-set by `fly redis attach`
-#   POSTMARK_SERVER_TOKEN
-#   ANYMAIL_WEBHOOK_SECRET
-#   AWS_ACCESS_KEY_ID
-#   AWS_SECRET_ACCESS_KEY
-#   AWS_STORAGE_BUCKET_NAME
-#   AWS_S3_ENDPOINT_URL
-#   DEFAULT_FROM_EMAIL
-#   SERVER_EMAIL
-#   SENTRY_DSN
-
-[deploy]
-  # `python` not `uv run` — the slim runtime image has no uv binary.
-  # collectstatic uploads to S3 bucket; migrate runs first.
-  release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [processes]
-  web    = "gunicorn config.wsgi --bind 0.0.0.0:8000"
-  worker = "celery -A config worker -l info"
-  bolt   = "env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8002"
+  web = "gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2"
+  worker = "celery -A config worker --loglevel info"
+  bolt = "python manage.py runbolt --host 0.0.0.0 --port 8001"
+
+[env]
+  DJANGO_SETTINGS_MODULE = "config.settings.production"
+  PORT = "8000"
 
 [[services]]
+  processes = ["web"]
   internal_port = 8000
   protocol = "tcp"
-  processes = ["web"]
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
 
   [[services.ports]]
     port = 80
@@ -49,16 +30,39 @@ primary_region = "iad"
     handlers = ["tls", "http"]
 
   [[services.http_checks]]
-    path = "/readyz"
-    interval = "10s"
+    interval = "15s"
     timeout = "5s"
-    grace_period = "30s"
+    grace_period = "10s"
+    method = "get"
+    path = "/healthz/"
+    protocol = "http"
 
 [[services]]
-  internal_port = 8002
-  protocol = "tcp"
   processes = ["bolt"]
+  internal_port = 8001
+  protocol = "tcp"
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
 
   [[services.ports]]
-    port = 8443
-    handlers = ["tls", "http"]
+    port = 8001
+    handlers = ["http"]
+
+[[vm]]
+  processes = ["web"]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+[[vm]]
+  processes = ["worker"]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+[[vm]]
+  processes = ["bolt"]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

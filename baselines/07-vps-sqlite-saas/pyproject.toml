@@ -1,53 +1,59 @@
-[build-system]
-requires = ["setuptools>=72"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "vps-sqlite-saas"
 version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=5.1,<6",
-    "django-allauth[mfa]>=65.7",
-    "django-axes>=7.0",
-    "whitenoise>=6.8",
-    "gunicorn>=23.0",
-    "structlog>=24.4",
-    "django-csp>=3.8",
-    "sentry-sdk[django]>=2.20",
-    "django-tasks>=0.12",
-    "django-tasks-db>=0.12",
-    "django-health-check>=4.0",
-    "dj-database-url>=2.3",
-    "environs[django]>=11.2",
-    "qrcode>=8.0",
+    "django>=5.1,<5.2",
+    "django-allauth[mfa]>=65.18.0",
+    "django-axes>=8.3.1",
+    "django-csp>=4.0",
+    "django-environ>=0.14.0",
+    "django-structlog>=10.1.0",
+    "django-tasks>=0.12.0",
+    "django-tasks-db>=0.12.0",
+    "gunicorn>=26.0.0",
+    "sentry-sdk>=2.64.0",
+    "structlog>=26.1.0",
+    "uvicorn>=0.50.2",
+    "whitenoise>=6.12.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
-    "ruff>=0.8",
-    "pyright>=1.1.390",
-    "django-stubs[compatible-mypy]>=5.1",
-    "pytest>=8.3",
-    "pytest-django>=4.9",
-    "factory-boy>=3.3",
-    "pre-commit>=4.0",
+    "django-stubs>=6.0.6",
+    "pre-commit>=4.6.0",
+    "pyright>=1.1.411",
+    "pytest>=9.1.1",
+    "pytest-django>=4.12.0",
+    "ruff>=0.15.20",
 ]
-
-[tool.setuptools.packages.find]
-where = ["."]
 
 [tool.ruff]
-line-length = 119
 target-version = "py312"
+line-length = 100
+extend-exclude = ["*/migrations/*.py"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
-ignore = ["E501"]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "users", "jobs"]
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "-p no:warnings"
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--reuse-db"
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+[tool.pyright]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["config", "users", "jobs"]
+reportMissingImports = true
+reportMissingModuleSource = false

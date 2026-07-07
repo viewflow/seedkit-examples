@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome — Shop{% endblock %}
+{% block title %}Shop — Home{% endblock %}
 
 {% block content %}
-<main class="min-h-screen flex flex-col items-center justify-center bg-base-200">
-  <div class="text-center">
-    <h1 class="text-4xl font-bold text-blue-600 mb-6">Welcome to the Shop</h1>
-    <p class="mb-8 text-lg">Your one-stop destination for great products.</p>
-    <a href="/accounts/login/" class="btn btn-primary">Get Started</a>
-    <button class="btn btn-primary ml-2">Shop Now</button>
+<div class="hero bg-base-200 rounded-box">
+  <div class="hero-content text-center py-16">
+    <div class="max-w-md">
+      <h1 class="text-4xl font-bold text-blue-600">Welcome to the Shop</h1>
+      <p class="py-6">Quality goods, delivered fast. Browse our catalog and check out securely.</p>
+      <button class="btn btn-primary">Start Shopping</button>
+    </div>
   </div>
-</main>
+</div>
 {% endblock %}

@@ -1,44 +1,52 @@
 [tools]
 python = "3.12"
 
-[tasks.install]
+[env]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+_.file = ".env"
+
+[tasks.setup]
+description = "Install dependencies"
 run = "uv sync"
 
-[tasks.dev]
-run = "uv run manage.py runserver"
+[tasks.up]
+description = "Start Postgres/Redis/MinIO for local dev"
+run = "docker compose up -d"
+
+[tasks.down]
+description = "Stop local dev services"
+run = "docker compose down"
 
 [tasks.migrate]
+description = "Apply database migrations"
 run = "uv run manage.py migrate"
 
-[tasks.makemigrations]
-run = "uv run manage.py makemigrations"
+[tasks.dev]
+description = "Run the Django dev server"
+run = "uv run manage.py runserver"
+depends = ["up", "migrate"]
 
-[tasks.shell]
-run = "uv run manage.py shell"
+[tasks.worker]
+description = "Run the Celery worker"
+run = "uv run celery -A config worker --loglevel info"
 
-[tasks.superuser]
-run = "uv run manage.py createsuperuser"
+[tasks.bolt]
+description = "Run the django-bolt API server"
+env = { DJANGO_SETTINGS_MODULE = "config.settings.bolt" }
+run = "uv run manage.py runbolt"
 
 [tasks.test]
+description = "Run the test suite"
 run = "uv run pytest"
 
 [tasks.lint]
+description = "Lint with Ruff"
 run = "uv run ruff check ."
 
-[tasks.fmt]
+[tasks.format]
+description = "Format with Ruff"
 run = "uv run ruff format ."
 
 [tasks.typecheck]
+description = "Type check with pyright"
 run = "uv run pyright"
-
-[tasks.collectstatic]
-run = "uv run manage.py collectstatic --noinput"
-
-[tasks.worker]
-run = "uv run celery -A config worker -l info"
-
-[tasks.runbolt]
-run = "DJANGO_SETTINGS_MODULE=config.settings.bolt uv run manage.py runbolt --dev"
-
-[tasks.deploy]
-run = "fly deploy"

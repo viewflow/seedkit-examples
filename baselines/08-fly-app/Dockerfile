@@ -1,45 +1,46 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/astral-sh/uv:python3.12-bookworm AS builder
 
-# django-bolt ships no aarch64-linux wheel — build from source on that arch
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim-bookworm AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/opt/venv
+    UV_PYTHON_DOWNLOADS=never
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project --no-dev
 
 COPY . .
+
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
-
-# collectstatic runs at deploy time (fly.toml release_command) because S3
-# credentials are not available at build time.
+    uv sync --locked --no-dev
 
 
-FROM python:3.12-slim-bookworm AS prod
+FROM python:3.12-slim-bookworm AS runtime
 
-ARG GIT_SHA=unknown
-ENV GIT_SHA=${GIT_SHA} \
-    PATH="/opt/venv/bin:$PATH"
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN groupadd --system django && useradd --system --gid django django
+RUN useradd --create-home --uid 1000 app
 
 WORKDIR /app
-COPY --from=builder --chown=django:django /opt/venv /opt/venv
-COPY --from=builder --chown=django:django /app /app
 
-USER django
+COPY --from=builder --chown=app:app /app /app
 
-CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000"]
+ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DJANGO_SETTINGS_MODULE=config.settings.production
+
+USER app
+
+RUN DJANGO_SECRET_KEY=build-time-placeholder \
+    DATABASE_URL=sqlite://:memory: \
+    DJANGO_ALLOWED_HOSTS=localhost \
+    python manage.py collectstatic --noinput
+
+EXPOSE 8000
+
+CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]

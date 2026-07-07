@@ -1,11 +1,18 @@
-{% extends "base.html" %}
-{% block title %}500 Server Error{% endblock %}
-{% block content %}
-<main class="min-h-screen flex items-center justify-center">
-  <div class="text-center">
-    <h1 class="text-4xl font-bold text-error mb-4">500</h1>
-    <p class="text-lg">Server error. Please try again later.</p>
-    <a href="/" class="btn btn-primary mt-4">Go Home</a>
-  </div>
-</main>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Server error</title>
+  <style>
+    body { font-family: system-ui, sans-serif; text-align: center; padding: 4rem 1rem; color: #1e293b; }
+    h1 { font-size: 2.25rem; font-weight: 700; color: #2563eb; }
+    a { color: #2563eb; }
+  </style>
+</head>
+<body>
+  <h1>500</h1>
+  <p>Something went wrong on our end. Please try again shortly.</p>
+  <p><a href="/">Back home</a></p>
+</body>
+</html>

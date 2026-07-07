@@ -1,13 +1,17 @@
+import logging
+
 from django.core.mail import send_mail
 from django_tasks import task
 
+logger = logging.getLogger(__name__)
+
 
 @task
-def send_welcome_email(to_address: str) -> None:
-    """Send a welcome e-mail. Runs in a db_worker process."""
+def send_welcome_email(recipient: str) -> None:
     send_mail(
-        subject="Welcome to silk-lab",
-        message="Your account is ready.",
-        from_email="noreply@example.com",
-        recipient_list=[to_address],
+        subject="Welcome",
+        message="Thanks for signing up.",
+        from_email=None,
+        recipient_list=[recipient],
     )
+    logger.info("Sent welcome email to %s", recipient)

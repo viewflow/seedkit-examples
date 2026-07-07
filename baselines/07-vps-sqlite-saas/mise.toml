@@ -1,58 +1,42 @@
 [tools]
 python = "3.12"
 
-[env]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
-_.file = [".env.local"]
-
-[tasks.install]
-description = "Install all dependencies"
-run = "uv pip install -e '.[dev]'"
+[tasks.setup]
+description = "Install dependencies and pre-commit hooks"
+run = "uv sync && uv run pre-commit install"
 
 [tasks.dev]
-description = "Run development server"
-run = "python manage.py runserver"
+description = "Run the local dev server"
+run = "uv run manage.py runserver"
 
 [tasks.migrate]
-description = "Apply database migrations"
-run = "python manage.py migrate && python manage.py migrate --database=cache || python manage.py createcachetable --database=cache"
+description = "Apply database migrations and ensure the cache table exists"
+run = "uv run manage.py migrate && uv run manage.py createcachetable --database=cache"
 
 [tasks.makemigrations]
-description = "Create new migrations"
-run = "python manage.py makemigrations"
+description = "Generate new migrations"
+run = "uv run manage.py makemigrations"
+
+[tasks.worker]
+description = "Run the django-tasks database worker"
+run = "uv run manage.py db_worker"
 
 [tasks.test]
-description = "Run test suite"
-run = "pytest"
+description = "Run the test suite"
+run = "uv run pytest"
 
 [tasks.lint]
-description = "Run ruff linter"
-run = "ruff check . && ruff format --check ."
+description = "Run ruff lint + format checks"
+run = "uv run ruff check . && uv run ruff format --check ."
 
-[tasks.fmt]
-description = "Auto-format code"
-run = "ruff format . && ruff check --fix ."
+[tasks.format]
+description = "Auto-format code with ruff"
+run = "uv run ruff format . && uv run ruff check --fix ."
 
 [tasks.typecheck]
-description = "Run pyright type checker"
-run = "pyright"
+description = "Run pyright"
+run = "uv run pyright"
 
-[tasks.createsuperuser]
-description = "Create a superuser"
-run = "python manage.py createsuperuser"
-
-[tasks.shell]
-description = "Open Django shell"
-run = "python manage.py shell"
-
-[tasks.collectstatic]
-description = "Collect static files"
-run = "python manage.py collectstatic --noinput"
-
-[tasks.bootstrap]
-description = "Full local setup from scratch"
-run = """
-uv pip install -e '.[dev]'
-python manage.py migrate
-python manage.py migrate --database=cache || python manage.py createcachetable --database=cache
-"""
+[tasks.check]
+description = "Run lint, typecheck and tests"
+depends = ["lint", "typecheck", "test"]

@@ -1,47 +1,70 @@
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ssh_deploy}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY:-org/09-ssh-deploy}:latest
+    image: ${IMAGE}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
-      - backups:/backups
-    depends_on:
-      - db
-      - redis
+      - static_data:/app/staticfiles
+      - backup_data:/app/backups
 
   worker:
-    image: ghcr.io/${GITHUB_REPOSITORY:-org/09-ssh-deploy}:latest
+    image: ${IMAGE}:${IMAGE_TAG:-latest}
     restart: unless-stopped
-    command: ["python", "manage.py", "rqworker", "default"]
     env_file: .env
-    environment:
-      DJANGO_SETTINGS_MODULE: config.settings.production
+    entrypoint: []
+    command: ["python", "manage.py", "rqworker", "--job-class", "django_tasks_rq.Job", "default"]
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - backup_data:/app/backups
+
+  backup:
+    image: ${IMAGE}:${IMAGE_TAG:-latest}
+    profiles: ["tools"]
+    env_file: .env
+    entrypoint: []
+    command: ["python", "manage.py", "dbbackup", "--noinput"]
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - backup_data:/app/backups
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
-  postgres_data:
-  backups:
+  db_data:
+  redis_data:
+  static_data:
+  backup_data:

@@ -1,15 +1,11 @@
 from django.urls import path
 from dmr.routing import Router
 
-from api.controllers import MediaController
-
-app_name = "api"
+from api.views import MediaController
 
 router = Router(
-    prefix="api/",
-    urls=[
-        path("media/", MediaController.as_view()),
+    'api/',
+    [
+        path('media/', MediaController.as_view(), name='media'),
     ],
 )
-
-urlpatterns = router.urls

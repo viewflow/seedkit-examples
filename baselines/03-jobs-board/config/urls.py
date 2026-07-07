@@ -1,10 +1,13 @@
+"""
+URL configuration for config project.
+"""
 from django.contrib import admin
 from django.urls import include, path
 
-from health_check.views import HealthCheckView
+from config.health import healthz
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("auth/", include("mailauth.urls")),
-    path("ht/", HealthCheckView.as_view(), name="health-check"),
+    path("accounts/", include("mailauth.urls")),
+    path("healthz/", healthz, name="healthz"),
 ]

@@ -1,23 +1,32 @@
-from .base import *
+"""Settings for the `manage.py runbolt` process: a lean, API-only stack."""
+
+from .base import *  # noqa: F403
 from .base import INSTALLED_APPS, MIDDLEWARE
 
-_DROP_MIDDLEWARE = {
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-}
-MIDDLEWARE = [m for m in MIDDLEWARE if m not in _DROP_MIDDLEWARE]
+INSTALLED_APPS = [
+    app
+    for app in INSTALLED_APPS
+    if app
+    not in {
+        "django.contrib.admin",
+        "django.contrib.sessions",
+        "django.contrib.messages",
+        "django.contrib.staticfiles",
+    }
+]
 
-_DROP_APPS = {
-    "django.contrib.admin",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-}
-INSTALLED_APPS = [a for a in INSTALLED_APPS if a not in _DROP_APPS]
+MIDDLEWARE = [
+    middleware
+    for middleware in MIDDLEWARE
+    if middleware
+    not in {
+        "django.contrib.sessions.middleware.SessionMiddleware",
+        "django.contrib.messages.middleware.MessageMiddleware",
+        "django.middleware.csrf.CsrfViewMiddleware",
+        "django.contrib.auth.middleware.AuthenticationMiddleware",
+        "whitenoise.middleware.WhiteNoiseMiddleware",
+    }
+]
 
 TEMPLATES = []
-
 ROOT_URLCONF = "config.urls_bolt"

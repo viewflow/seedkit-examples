@@ -1,0 +1,14 @@
+.venv/
+.git/
+.github/
+staticfiles/
+static/css/tailwind.css
+.django_tailwind_cli/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+db.sqlite3
+.env
+docs/
+README.md

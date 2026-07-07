@@ -1,5 +1,3 @@
-set dotenv-load
-
 default:
     @just --list
 
@@ -9,11 +7,14 @@ up:
 down:
     docker compose down
 
+run:
+    uv run manage.py runserver
+
 migrate:
     uv run manage.py migrate
 
-makemigrations *args:
-    uv run manage.py makemigrations {{ args }}
+makemigrations:
+    uv run manage.py makemigrations
 
 createsuperuser:
     uv run manage.py createsuperuser
@@ -21,14 +22,11 @@ createsuperuser:
 shell:
     uv run manage.py shell
 
-run:
-    uv run manage.py runserver
+test:
+    uv run manage.py test
 
 worker:
     uv run celery -A config worker -l info
 
 beat:
     uv run celery -A config beat -l info
-
-test *args:
-    uv run manage.py test {{ args }}

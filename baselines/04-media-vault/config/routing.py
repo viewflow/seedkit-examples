@@ -1,10 +1,9 @@
-from channels.routing import URLRouter
-from django.urls import path
+from django.urls import re_path
 
-from jobs.consumers import EchoConsumer
+from core.consumers import EchoConsumer
 
 websocket_urlpatterns = [
-    path("ws/echo/", EchoConsumer.as_asgi()),
+    # django-stubs types re_path()'s second argument for HTTP views; Channels
+    # consumers are ASGI applications, which pyright can't reconcile here.
+    re_path(r'^ws/echo/$', EchoConsumer.as_asgi())  # pyright: ignore[reportCallIssue, reportArgumentType]
 ]
-
-websocket_router = URLRouter(websocket_urlpatterns)

@@ -2,44 +2,48 @@
 python = "3.12"
 
 [env]
-DJANGO_SETTINGS_MODULE = "config.settings.local"
+_.python.venv = { path = ".venv", create = true }
 
-[tasks.server]
-description = "Run development server"
+[tasks.install]
+description = "Install/sync dependencies"
+run = "uv sync"
+
+[tasks.run]
+description = "Run the local dev server"
 run = "uv run python manage.py runserver"
 
 [tasks.migrate]
-description = "Run database migrations"
+description = "Apply database migrations"
 run = "uv run python manage.py migrate"
 
 [tasks.makemigrations]
-description = "Create new migrations"
+description = "Generate new database migrations"
 run = "uv run python manage.py makemigrations"
 
 [tasks.tailwind-build]
-description = "Build Tailwind CSS"
+description = "Build the production Tailwind CSS bundle"
 run = "uv run python manage.py tailwind build"
 
 [tasks.tailwind-watch]
-description = "Watch Tailwind CSS"
+description = "Watch and rebuild Tailwind CSS on change"
 run = "uv run python manage.py tailwind watch"
 
 [tasks.test]
-description = "Run tests"
+description = "Run the test suite"
 run = "uv run pytest"
 
 [tasks.lint]
-description = "Run ruff linter"
+description = "Lint with ruff"
 run = "uv run ruff check ."
 
+[tasks.format]
+description = "Format with ruff"
+run = "uv run ruff format ."
+
 [tasks.typecheck]
-description = "Run pyright type checker"
+description = "Type-check with pyright"
 run = "uv run pyright"
 
-[tasks.collectstatic]
-description = "Collect static files"
-run = "uv run python manage.py collectstatic --noinput"
-
-[tasks.createsuperuser]
-description = "Create a superuser"
-run = "uv run python manage.py createsuperuser"
+[tasks.check]
+description = "Run lint, typecheck and tests"
+depends = ["lint", "typecheck", "test"]

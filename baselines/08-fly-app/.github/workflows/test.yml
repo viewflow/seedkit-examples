@@ -2,6 +2,7 @@ name: test
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
@@ -10,59 +11,61 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:16-alpine
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fly_app
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
+
       redis:
-        image: redis:7
+        image: redis:7-alpine
         ports:
           - 6379:6379
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      DJANGO_SECRET_KEY: test-key
-      DJANGO_DEBUG: "False"
-      DJANGO_ALLOWED_HOSTS: "*"
-      EMAIL_URL: consolemail://
-      DEFAULT_FROM_EMAIL: test@example.com
-      SERVER_EMAIL: test@example.com
-      REDIS_URL: redis://localhost:6379
-      POSTMARK_SERVER_TOKEN: ci-placeholder
-      ANYMAIL_WEBHOOK_SECRET: ci-placeholder
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DJANGO_SECRET_KEY: ci-secret-key
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/fly_app
+      REDIS_URL: redis://127.0.0.1:6379/0
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: astral-sh/setup-uv@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
 
-      - run: uv sync --frozen
+      - name: Set up Python
+        run: uv python install
 
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - name: Install dependencies
+        run: uv sync --locked --all-extras --dev
 
-      - run: uv run pyright
+      - name: Ruff lint
+        run: uv run ruff check .
 
-      - run: uv run manage.py check --deploy --fail-level WARNING
-        env:
-          DJANGO_SETTINGS_MODULE: config.settings.production
-          DJANGO_SECURE_SSL_REDIRECT: "False"
-          AWS_ACCESS_KEY_ID: ci-placeholder
-          AWS_SECRET_ACCESS_KEY: ci-placeholder
-          AWS_STORAGE_BUCKET_NAME: ci-placeholder
-          SENTRY_DSN: ""
+      - name: Ruff format check
+        run: uv run ruff format --check .
 
-      - run: uv run pytest
+      - name: Pyright
+        run: uv run pyright
+
+      - name: Run migrations
+        run: uv run manage.py migrate --noinput
+
+      - name: Run tests
+        run: uv run pytest

@@ -1,54 +1,53 @@
-from pathlib import Path
-
 import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
-from .base import *  # noqa: F401, F403
-from .base import DATABASES, env
+from .base import *  # noqa: F403
+from .base import env
 
-# Hosts
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+DEBUG = False
 
 # Security
-SECURE_HSTS_SECONDS = 31_536_000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-SECURE_SSL_REDIRECT = True
+# https://docs.djangoproject.com/en/5.1/topics/security/
+
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
+SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-# Production DB lives in the Docker volume at /data/
-DATABASES["default"]["NAME"] = Path("/data/db.sqlite3")
-DATABASES["cache"]["NAME"] = Path("/data/cache.sqlite3")
+# Caddy terminates TLS and forwards over plain HTTP within the docker network,
+# setting this header so Django knows the original request was HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
-# Email via SMTP (Postmark or any SMTP)
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-_email_url = env.str("EMAIL_URL", default="")
-if _email_url:
-    _email = env.dj_email_url("EMAIL_URL")
-    EMAIL_HOST = _email["EMAIL_HOST"]
-    EMAIL_PORT = _email["EMAIL_PORT"]
-    EMAIL_HOST_USER = _email["EMAIL_HOST_USER"]
-    EMAIL_HOST_PASSWORD = _email["EMAIL_HOST_PASSWORD"]
-    EMAIL_USE_TLS = _email.get("EMAIL_USE_TLS", False)
-    EMAIL_USE_SSL = _email.get("EMAIL_USE_SSL", False)
+# Content-Security-Policy via django-csp
+# https://django-csp.readthedocs.io/
 
-# Tighter CSP for production
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = ("'self'",)
-CSP_SCRIPT_SRC = ("'self'",)
-CSP_IMG_SRC = ("'self'", "data:")
-CSP_FONT_SRC = ("'self'",)
-CSP_FRAME_ANCESTORS = ("'none'",)
-CSP_UPGRADE_INSECURE_REQUESTS = True
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ["'self'"],
+        "img-src": ["'self'", "data:"],
+        "style-src": ["'self'"],
+        "script-src": ["'self'"],
+        "frame-ancestors": ["'none'"],
+    },
+}
 
 # Sentry
-_sentry_dsn = env.str("SENTRY_DSN", default="")
-if _sentry_dsn:
+# https://docs.sentry.io/platforms/python/integrations/django/
+
+SENTRY_DSN = env.str("SENTRY_DSN", default="")
+if SENTRY_DSN:
     sentry_sdk.init(
-        dsn=_sentry_dsn,
-        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.1),
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
         send_default_pii=False,
+        environment=env.str("SENTRY_ENVIRONMENT", default="production"),
     )
+
+# JSON logs in production
+LOGGING["handlers"]["console"]["formatter"] = "json_formatter"  # noqa: F405

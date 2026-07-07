@@ -1,11 +1,15 @@
 {% extends "base.html" %}
-{% block title %}403 Forbidden{% endblock %}
+
+{% block title %}Forbidden{% endblock %}
+
 {% block content %}
-<main class="min-h-screen flex items-center justify-center">
-  <div class="text-center">
-    <h1 class="text-4xl font-bold text-error mb-4">403</h1>
-    <p class="text-lg">Access denied.</p>
-    <a href="/" class="btn btn-primary mt-4">Go Home</a>
+<div class="hero">
+  <div class="hero-content text-center py-16">
+    <div class="max-w-md">
+      <h1 class="text-4xl font-bold text-blue-600">403</h1>
+      <p class="py-6">You don't have permission to access this page.</p>
+      <a href="{% url 'pages:index' %}" class="btn btn-primary">Back home</a>
+    </div>
   </div>
-</main>
+</div>
 {% endblock %}

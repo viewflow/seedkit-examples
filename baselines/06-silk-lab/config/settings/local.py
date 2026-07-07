@@ -1,21 +1,11 @@
-from pathlib import Path
+from .base import *  # noqa: F403
+from .base import INSTALLED_APPS, MIDDLEWARE, env
 
-import environ
+DEBUG = env.bool("DEBUG", default=True)
 
-# Read .env before base.py executes its env() calls.
-_BASE_DIR = Path(__file__).resolve().parent.parent.parent
-environ.Env.read_env(_BASE_DIR / ".env")
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
-from .base import *  # noqa: E402, F401, F403
-
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-# Capture every request with Silk in local dev.
-SILKY_PYTHON_PROFILER = True
-SILKY_INTERCEPT_PERCENT = 100
-
-# Raise on N+1 queries detected by django-zeal.
-ZEAL_RAISE = False  # flip to True when actively hunting N+1s
+# django-zeal: catch N+1 queries during local development.
+# Not recommended in production — see https://github.com/taobojlen/django-zeal
+INSTALLED_APPS = [*INSTALLED_APPS, "zeal"]
+MIDDLEWARE = [*MIDDLEWARE, "zeal.middleware.zeal_middleware"]

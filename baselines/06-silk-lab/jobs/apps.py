@@ -6,4 +6,4 @@ class JobsConfig(AppConfig):
     name = "jobs"
 
     def ready(self):
-        from . import tasks  # noqa: F401
+        from jobs import tasks  # noqa: F401

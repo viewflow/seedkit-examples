@@ -1,13 +1,22 @@
 class CacheRouter:
-    """Prevent regular app migrations from running against the cache database."""
+    """Route the cache table's queries to the dedicated cache.sqlite3 database."""
 
-    def db_for_read(self, model, **hints):  # type: ignore[no-untyped-def]
-        return None  # DatabaseCache selects its DB via CACHES OPTIONS["DATABASE"]
+    cache_app = "django_cache"
+    cache_db = "cache"
 
-    def db_for_write(self, model, **hints):  # type: ignore[no-untyped-def]
+    def db_for_read(self, model, **hints):
+        if model._meta.app_label == self.cache_app:
+            return self.cache_db
         return None
 
-    def allow_migrate(self, db, app_label, model_name=None, **hints):  # type: ignore[no-untyped-def]
-        if db == "cache":
+    def db_for_write(self, model, **hints):
+        if model._meta.app_label == self.cache_app:
+            return self.cache_db
+        return None
+
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        if app_label == self.cache_app:
+            return db == self.cache_db
+        if db == self.cache_db:
             return False
         return None
