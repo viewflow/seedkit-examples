@@ -1,0 +1,70 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      # 50+ chars, 5+ unique, no `django-insecure-` prefix — a short key or
+      # that prefix trips security.W009 at the `check --deploy` step below.
+      DJANGO_SECRET_KEY: ci-placeholder-secret-key-not-a-real-secret-0123456789-abcxyz
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: "*"
+      EMAIL_URL: consolemail://
+      DEFAULT_FROM_EMAIL: test@example.com
+      SERVER_EMAIL: test@example.com
+      REDIS_URL: redis://localhost:6379
+      POSTMARK_SERVER_TOKEN: ci-placeholder
+      ANYMAIL_WEBHOOK_SECRET: ci-placeholder
+      AWS_ACCESS_KEY_ID: ci-placeholder
+      AWS_SECRET_ACCESS_KEY: ci-placeholder
+      AWS_STORAGE_BUCKET_NAME: ci-placeholder
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v8.3.0
+        with:
+          enable-cache: true
+
+      - run: uv sync --frozen
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+
+      - run: uv run pyright
+
+      # Catches security-setting regressions (SSL_REDIRECT without proxy,
+      # missing HSTS, etc.) at CI time instead of first-deploy.
+      - run: uv run manage.py check --deploy --fail-level WARNING
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+
+      - run: uv run pytest

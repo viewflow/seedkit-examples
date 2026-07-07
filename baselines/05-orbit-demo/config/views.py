@@ -4,6 +4,6 @@ from django.http import JsonResponse
 
 def healthz(request):
     with connection.cursor() as cursor:
-        cursor.execute('SELECT 1')
+        cursor.execute("SELECT 1")
         cursor.fetchone()
-    return JsonResponse({'status': 'ok'})
+    return JsonResponse({"status": "ok"})

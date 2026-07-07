@@ -21,13 +21,10 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=[]
-)  # DEBUG already accepts localhost / 127.0.0.1 / [::1]
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 DATABASES = {
     "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET,
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
     )
 }  # 4 slashes = absolute, survives running manage.py from any cwd
 
@@ -37,8 +34,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Application definition
 
 INSTALLED_APPS = [
-    # mailauth.contrib.admin MUST come before django.contrib.admin — Django
-    # resolves admin templates / login view in app order.
+    # `mailauth.contrib.admin` MUST come before `django.contrib.admin` —
+    # Django resolves admin templates / login view in app order, so the
+    # overriding app has to load first.
     "mailauth.contrib.admin",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -46,10 +44,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "anymail",
-    "axes",
     "mailauth",
     "mailauth.contrib.user",
+    "axes",
+    "anymail",
     "django_bolt",
     "api",
 ]
@@ -62,7 +60,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    # AxesMiddleware MUST be last — wraps every other middleware's auth attempts.
+    # AxesMiddleware MUST be the last entry — wraps every other middleware's
+    # auth attempts.
     "axes.middleware.AxesMiddleware",
 ]
 
@@ -113,36 +112,36 @@ TIME_ZONE = "UTC"
 USE_TZ = True
 
 
-# Static / media — replaced below by the S3 storage block.
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/6.0/howto/static-files/
+
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
-# --- Auth: django-mail-auth (passwordless magic-link) ---
-# EmailUser route: no custom user code, `mailauth` handles email uniqueness.
+# Auth — django-mail-auth (passwordless magic-link), EmailUser route.
+
 AUTH_USER_MODEL = "mailauth_user.EmailUser"
 
 AUTHENTICATION_BACKENDS = [
-    # AxesBackend MUST be first — wrong order silently disables lockout.
     "axes.backends.AxesBackend",
-    # EmailUser has no password column, so ModelBackend can never authenticate
-    # anyway — leave it out.
     "mailauth.backends.MailAuthBackend",
 ]
 
 LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/"  # don't send non-staff users to /admin/
+LOGIN_REDIRECT_URL = "/"
 
 
-# --- django-axes (brute-force lockout) ---
+# django-axes — brute-force / lockout protection.
+
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # hours
 AXES_LOCKOUT_PARAMETERS = ["ip_address", "username"]
 AXES_RESET_ON_SUCCESS = True
 
 
-# --- Redis cache ---
-# Bare scheme://host:port form — no trailing slash, no /<db>. Per-purpose
-# DBs are appended below. /0 cache, /1 Celery broker, /2 Celery results.
+# Redis — cache backend, also the Celery broker / result backend.
+
 REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
 
 CACHES = {
@@ -154,13 +153,38 @@ CACHES = {
 }
 
 
-# --- Celery + Redis broker ---
+# Celery
+
 CELERY_BROKER_URL = f"{REDIS_URL}/1"
 CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True  # silence Celery 5+ deprecation
 
 
-# --- Storage: S3-compatible (MinIO in dev, real S3 in prod) ---
+# Email — console in dev, Postmark (anymail) in prod (see production.py).
+
+globals().update(
+    env.email_url(
+        "EMAIL_URL",
+        default="consolemail://",
+    )
+)
+
+DEFAULT_FROM_EMAIL = env(
+    "DEFAULT_FROM_EMAIL",
+    default="webmaster@localhost" if DEBUG else env.NOTSET,
+)
+SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+
+ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])]
+MANAGERS = ADMINS
+
+ANYMAIL = {
+    "POSTMARK_SERVER_TOKEN": env("POSTMARK_SERVER_TOKEN", default="" if DEBUG else env.NOTSET),
+    "WEBHOOK_SECRET": env("ANYMAIL_WEBHOOK_SECRET", default="" if DEBUG else env.NOTSET),
+}
+
+
+# Storage — S3-compatible (MinIO locally, real S3 in prod).
 # Gated defaults match the foundation pattern: dev/build runs zero-config,
 # prod (DEBUG unset) raises ImproperlyConfigured if any of these is missing.
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
@@ -194,10 +218,9 @@ STORAGES = {
     },
 }
 
-STATIC_URL = "/static/"
-
 # Derive scheme + host for media URLs. AWS_S3_CUSTOM_DOMAIN wins (CloudFront /
-# bucket vhost). Otherwise fall back to the endpoint host (MinIO in dev).
+# bucket vhost). Otherwise fall back to the endpoint host (MinIO in dev) so
+# generated URLs are reachable from the browser.
 AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
 if AWS_S3_CUSTOM_DOMAIN:
     MEDIA_URL = f"{AWS_S3_URL_PROTOCOL}//{AWS_S3_CUSTOM_DOMAIN}/media/"
@@ -205,37 +228,10 @@ else:
     MEDIA_URL = "/media/"
 
 
-# --- Email: django-anymail (Postmark) ---
-# Anymail's EMAIL_BACKEND overrides whatever EMAIL_URL parsed below. The
-# relaxed default (no env.NOTSET branch) is intentional — .env.prod for this
-# setup carries POSTMARK_SERVER_TOKEN instead of EMAIL_URL.
-globals().update(env.email_url("EMAIL_URL", default="consolemail://"))
+# Analytics — GA4. Empty ANALYTICS_ID disables tracking (e.g. in dev).
 
-DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL",
-    default="webmaster@localhost" if DEBUG else env.NOTSET,
-)
-SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
-
-ADMINS = [(address.split("@")[0], address) for address in env.list("DJANGO_ADMINS", default=[])]
-MANAGERS = ADMINS
-
-if not DEBUG:
-    EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
-
-ANYMAIL = {
-    "POSTMARK_SERVER_TOKEN": env("POSTMARK_SERVER_TOKEN", default="" if DEBUG else env.NOTSET),
-    "WEBHOOK_SECRET": env("ANYMAIL_WEBHOOK_SECRET", default="" if DEBUG else env.NOTSET),
-}
-
-
-# --- Analytics: GA4 ---
 ANALYTICS_ID = env("ANALYTICS_ID", default="")
-ANALYTICS_HOST = env("ANALYTICS_HOST", default="")  # unused for GA4
-
-
-# --- GDPR / privacy ---
-SESSION_COOKIE_SAMESITE = "Lax"
+ANALYTICS_HOST = env("ANALYTICS_HOST", default="")  # omit for GA4
 
 
 try:

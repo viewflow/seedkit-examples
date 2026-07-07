@@ -4,8 +4,6 @@ from django.db import transaction
 
 
 class Command(BaseCommand):
-    """GDPR right-to-erasure helper: delete a user and cascade to owned rows."""
-
     def add_arguments(self, parser):
         parser.add_argument("user_id", type=int)
 
