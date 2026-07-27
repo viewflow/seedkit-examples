@@ -1,23 +1,29 @@
 import redis
+import structlog
 from django.conf import settings
-from django.db import connections
-from django.db.utils import OperationalError
-from django.http import HttpResponse
+from django.db import connection
+from django.http import HttpRequest, HttpResponse
+
+logger = structlog.get_logger(__name__)
 
 
-def healthz(request):
-    return HttpResponse("ok", content_type="text/plain")
+def healthz(request: HttpRequest) -> HttpResponse:
+    """Liveness check: the process is up and can serve requests."""
+    return HttpResponse("ok")
 
 
-def readyz(request):
+def readyz(request: HttpRequest) -> HttpResponse:
+    """Readiness check: dependencies (database, redis) are reachable."""
     try:
-        connections["default"].cursor()
-    except OperationalError:
-        return HttpResponse("not ready", status=503, content_type="text/plain")
+        connection.ensure_connection()
+    except Exception:
+        logger.exception("readyz_database_unreachable")
+        return HttpResponse("not ready", status=503)
 
     try:
         redis.Redis.from_url(settings.REDIS_URL).ping()
-    except redis.RedisError:
-        return HttpResponse("not ready", status=503, content_type="text/plain")
+    except Exception:
+        logger.exception("readyz_redis_unreachable")
+        return HttpResponse("not ready", status=503)
 
-    return HttpResponse("ready", content_type="text/plain")
+    return HttpResponse("ready")

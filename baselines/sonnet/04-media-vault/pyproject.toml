@@ -6,16 +6,13 @@ requires-python = ">=3.12"
 dependencies = [
     "channels>=4.3.2",
     "channels-redis>=4.3.0",
-    "daphne>=4.2.3",
     "django>=6.0.7",
     "django-cors-headers>=4.9.0",
     "django-environ>=0.14.0",
-    "django-modern-rest[msgspec,openapi]>=0.11.0",
+    "django-modern-rest[jwt,msgspec,openapi]>=0.11.0",
     "django-storages[s3]>=1.14.6",
     "django-tasks-rq>=0.12.0",
     "psycopg[binary]>=3.3.4",
-    "pyjwt>=2.13.0",
-    "redis>=8.0.1",
     "structlog>=26.1.0",
     "uvicorn[standard]>=0.51.0",
 ]
@@ -32,22 +29,17 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = [
-    "F",   # pyflakes
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "I",   # isort
-    "UP",  # pyupgrade
-    "B",   # flake8-bugbear
-    "DJ",  # flake8-django
-    "C4",  # flake8-comprehensions
-]
-ignore = [
-    "E501",  # line-too-long, handled by formatter
-]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["config", "api", "jobs"]
 
-[tool.django-stubs]
-django_settings_module = "config.settings.local"
+[tool.pyright]
+pythonVersion = "3.12"
+venvPath = "."
+venv = ".venv"
+include = ["config", "api", "jobs"]
+exclude = ["**/migrations", ".venv"]
+reportMissingImports = true
+reportMissingTypeStubs = false

@@ -1,10 +1,27 @@
 from .base import *
 
-# Mandatory email verification only in production — console backend in dev
-# would block every signup since the link only prints to stdout.
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"
 
-# WhiteNoise — insert directly after SecurityMiddleware, manifest static storage.
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
+
+if env.bool("DJANGO_BEHIND_PROXY", default=False):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
+
 sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
 MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
@@ -12,37 +29,3 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
-
-# Security
-
-# HTTPS — env-toggle so smoke / staging / direct-gunicorn access can run
-# without TLS. Hardcoding True returns 301 on every plain-HTTP probe.
-SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
-# Exempt healthcheck endpoints — internal probes hit the container directly
-# without traversing the TLS proxy, so they arrive as plain HTTP.
-SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
-
-# X-Forwarded-Proto trust. ONLY enable when there's a TLS-terminating proxy
-# (Caddy) in front of gunicorn.
-if env.bool("DJANGO_BEHIND_PROXY", default=False):
-    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
-# Cookies
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-# HSTS
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = False  # opt in only after every subdomain serves HTTPS
-SECURE_HSTS_PRELOAD = False  # opt in only after manual review of the consequences
-
-# These two are deliberate opt-outs above, so silence the matching
-# `manage.py check --deploy` warnings.
-SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
-
-# Other browser hardening
-SECURE_REFERRER_POLICY = "same-origin"
-SECURE_CONTENT_TYPE_NOSNIFF = True
-
-# Required behind a TLS-terminating proxy whenever Django sees the request as HTTP.
-CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])

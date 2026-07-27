@@ -1,13 +1,20 @@
 {% extends "base.html" %}
 
+{% block title %}Shop — Home{% endblock %}
+{% block meta_description %}Welcome to Shop, a small e-commerce site.{% endblock %}
+{% block og_title %}Shop — Home{% endblock %}
+{% block og_description %}Welcome to Shop, a small e-commerce site.{% endblock %}
+
 {% block content %}
-<div class="hero">
+<section class="hero py-24">
     <div class="hero-content text-center">
-        <div class="max-w-md">
+        <div class="max-w-xl">
             <h1 class="text-4xl font-bold text-blue-600">Welcome to Shop</h1>
-            <p class="py-6">Small e-commerce storefront, built with Django, Tailwind CSS and DaisyUI.</p>
-            <button class="btn btn-primary">Start shopping</button>
+            <p class="py-6">
+                A small e-commerce storefront built with Django, Tailwind CSS and DaisyUI.
+            </p>
+            <a href="{% url 'account_login' %}" class="btn btn-primary">Get Started</a>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}

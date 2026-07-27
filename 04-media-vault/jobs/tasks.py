@@ -5,5 +5,5 @@ logger = structlog.get_logger(__name__)
 
 
 @task
-def process_media(filename: str, size: int) -> None:
-    logger.info("processing_media", filename=filename, size=size)
+def process_upload(filename: str) -> None:
+    logger.info("processing_upload", filename=filename)

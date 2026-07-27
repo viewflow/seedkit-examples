@@ -10,11 +10,11 @@ class MediaCreateRequest(msgspec.Struct):
     size: int
 
 
-class MediaResponse(msgspec.Struct):
+class MediaCreateResponse(msgspec.Struct):
     uid: uuid.UUID
     filename: str
 
 
 class MediaController(Controller[MsgspecSerializer]):
-    async def post(self, parsed_body: Body[MediaCreateRequest]) -> MediaResponse:
-        return MediaResponse(uid=uuid.uuid4(), filename=parsed_body.filename)
+    def post(self, parsed_body: Body[MediaCreateRequest]) -> MediaCreateResponse:
+        return MediaCreateResponse(uid=uuid.uuid4(), filename=parsed_body.filename)

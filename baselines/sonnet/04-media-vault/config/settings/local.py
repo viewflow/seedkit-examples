@@ -1,10 +1,15 @@
-from .base import *  # noqa: F403
-from .base import LOGGING
+"""Local development settings."""
 
-DEBUG = True
+from config.settings._logging import build_logging_config
+from config.settings.base import *  # noqa: F403
+from config.settings.base import env
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]"]
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
+
+ALLOWED_HOSTS = env.list(
+    "DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"],  # pyright: ignore[reportArgumentType]
+)
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-LOGGING["handlers"]["console"]["formatter"] = "console"
+LOGGING = build_logging_config(json_logs=False)

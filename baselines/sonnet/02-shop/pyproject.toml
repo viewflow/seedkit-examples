@@ -1,15 +1,15 @@
 [project]
 name = "shop"
 version = "0.1.0"
-description = "Small e-commerce site with admin and SMTP transactional email."
+description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
-    "django>=6.0.7",
+    "django>=5.1,<5.2",
     "django-allauth>=65.18.0",
     "django-axes>=8.3.1",
     "django-browser-reload>=1.21.0",
     "django-environ>=0.14.0",
-    "django-tailwind-cli>=4.6.2",
+    "django-tailwind-cli>=4.4.2",
     "gunicorn>=26.0.0",
     "psycopg[binary]>=3.3.4",
     "stripe>=15.3.1",
@@ -26,30 +26,26 @@ dev = [
     "ruff>=0.16.0",
 ]
 
-[tool.ruff]
-target-version = "py312"
-line-length = 119
-
-[tool.ruff.lint]
-select = ["E", "F", "I", "UP", "DJ", "B"]
-ignore = ["DJ001"]
-
-[tool.ruff.lint.per-file-ignores]
-"*/migrations/*.py" = ["E501", "I001"]
-
-[tool.ruff.lint.isort]
-known-first-party = ["config", "users", "pages", "billing"]
-
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py"]
 addopts = "--reuse-db"
 
-[tool.django-stubs]
-django_settings_module = "config.settings.test"
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["*/migrations/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "users", "pages", "billing"]
 
 [tool.pyright]
 pythonVersion = "3.12"
 venvPath = "."
 venv = ".venv"
-include = ["config", "users", "pages", "billing"]
+include = ["config", "users", "pages", "billing", "manage.py", "conftest.py"]
+useLibraryCodeForTypes = true

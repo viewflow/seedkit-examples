@@ -3,13 +3,13 @@
 {% block title %}Forbidden{% endblock %}
 
 {% block content %}
-<div class="hero">
+<section class="hero py-24">
     <div class="hero-content text-center">
-        <div class="max-w-md">
+        <div class="max-w-xl">
             <h1 class="text-4xl font-bold">403</h1>
             <p class="py-6">You don't have permission to access this page.</p>
-            <a href="{% url 'pages:index' %}" class="btn btn-primary">Go home</a>
+            <a href="{% url 'pages:index' %}" class="btn btn-primary">Back home</a>
         </div>
     </div>
-</div>
+</section>
 {% endblock %}

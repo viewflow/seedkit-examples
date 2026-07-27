@@ -1,12 +1,11 @@
 __pycache__/
-*.pyc
-.venv/
+*.py[cod]
+*.sqlite3
 .env
-db.sqlite3
+.venv/
 staticfiles/
-assets/css/tailwind.css
-/.django_tailwind_cli/
+.django_tailwind_cli/
+assets/css/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
-.DS_Store

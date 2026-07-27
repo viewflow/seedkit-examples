@@ -20,7 +20,7 @@ test:
     uv run manage.py test
 
 worker:
-    uv run celery -A config worker -l info
+    DJANGO_SETTINGS_MODULE=config.settings uv run celery -A config worker -l info
 
 beat:
-    uv run celery -A config beat -l info
+    DJANGO_SETTINGS_MODULE=config.settings uv run celery -A config beat -l info

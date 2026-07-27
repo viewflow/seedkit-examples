@@ -9,10 +9,10 @@ class Post(models.Model):
     published_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-published_at']
+        ordering = ["-published_at"]
 
     def __str__(self):
         return self.title
 
     def get_absolute_url(self):
-        return reverse('blog:post_detail', args=[self.slug])
+        return reverse("post_detail", kwargs={"slug": self.slug})

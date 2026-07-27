@@ -45,15 +45,23 @@ Job board with background email notifications and a daily digest.
 
 ## Stack
 
-- Django 6, single-file settings (`config/settings.py`)
-- PostgreSQL (Postgres-in-Docker for local dev)
-- Auth: `django-mail-auth` (passwordless magic-link) against stock `auth.User`, with a DB-level unique index + admin-form validation on email (`jobs/migrations/0001_auth_user_email_unique.py`, `jobs/admin.py`) since `auth.User.email` has no built-in uniqueness
-- Background tasks: Celery + Celery Beat, broker/results on Redis, autodiscovered from `jobs/tasks.py`
-- Cache: `django-redis`
-- Email: console backend locally (`EMAIL_URL=consolemail://`)
-- i18n enabled (`LANGUAGES = ["en"]` — add more as the product ships them)
-- Health checks: `/healthz` (liveness), `/readyz` (DB readiness)
-- Task runner: `just`
+- Django 6, single-file `config/settings.py`, `django-environ` for env-driven config.
+- PostgreSQL 17 — Postgres in Docker (`docker-compose.yml`), host connects via the published port.
+- Redis — cache (`django-redis`, DB `/0`) and Celery broker/results (DB `/1` / `/2`).
+- Celery + Celery Beat — background tasks and periodic scheduling. `jobs` app registered in `INSTALLED_APPS`; `jobs/tasks.py` holds `@shared_task` functions, autodiscovered via `app.autodiscover_tasks()`.
+- Auth: `django-mail-auth` — passwordless magic-link login (`mailauth.contrib.user.EmailUser` as `AUTH_USER_MODEL`; `mailauth.contrib.admin` wires the same flow into `/admin/`).
+- Email: console backend in dev (`EMAIL_URL=consolemail://`) — magic links and notifications print to the `runserver` / worker stdout.
+- i18n: `LocaleMiddleware`, `LANGUAGES`, `LOCALE_PATHS` wired; only `en` shipped — add locales with `uv run manage.py makemessages -l <code>`.
+- Health checks: `/healthz` (liveness), `/readyz` (DB readiness) in `config/views.py`.
+- Task runner: `just` (`justfile`).
+- Test runner: stock `manage.py test`.
+
+## Local ports
+
+A native Postgres/Redis were already listening on the default ports (5432 / 6379) on the
+dev machine this was scaffolded on, so the Docker services publish on **5433** / **6380**
+instead. If your machine is clear of those, feel free to move `docker-compose.yml` and
+`.env` back to the standard `5432` / `6379`.
 
 ## Setup
 
@@ -66,52 +74,34 @@ just superuser
 just dev
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in — the magic link prints to the
-`runserver` console (console email backend).
-
 ## Commands
 
-```sh
-just install          # uv sync
-just dev               # runserver
-just migrate           # apply migrations
-just makemigrations    # generate migrations
-just shell              # Django shell
-just superuser          # createsuperuser
-just test               # manage.py test
-just worker             # celery worker
-just beat                # celery beat (periodic tasks)
-```
+| Command | Does |
+| --- | --- |
+| `just install` | `uv sync` |
+| `just dev` | run the dev server |
+| `just migrate` | apply migrations |
+| `just makemigrations` | generate migrations |
+| `just shell` | Django shell |
+| `just superuser` | create a superuser |
+| `just test` | `manage.py test` |
+| `just worker` | run the Celery worker |
+| `just beat` | run Celery Beat (periodic tasks) |
 
 Fallback without `just`: `uv run manage.py <command>`.
 
-Run the worker and beat in separate terminals alongside `just dev`:
+Sign in at `/accounts/login/` (or `/admin/`) with any email — the magic link prints to
+the console (dev) since `EMAIL_URL=consolemail://`.
+
+## Background tasks
+
+`jobs/tasks.py` ships one sample task, `send_daily_digest`, scheduled via
+`CELERY_BEAT_SCHEDULE` in `config/settings.py` (daily at 08:00 UTC). Run a worker and
+beat alongside `runserver`:
 
 ```sh
 just worker
 just beat
 ```
-
-## Local ports
-
-The host already had Postgres and Redis listening on the default ports
-(5432 / 6379), so this project's `docker-compose.yml` publishes them on
-**5433** and **6380** instead — `.env` / `.env.example` match. Adjust back to
-5432/6380 if your host is free of conflicts.
-
-## Tasks
-
-Add `@shared_task` functions to `jobs/tasks.py`; Celery autodiscovers them
-from any app in `INSTALLED_APPS`. `jobs/tasks.py` ships two examples:
-
-- `add(x, y)` — trivial task, call with `.delay(1, 2)`
-- `ping()` — scheduled every minute via `CELERY_BEAT_SCHEDULE` in
-  `config/settings.py`, proving Beat + autodiscovery work end to end
-
-## Production setup
-
-Not configured — this project only ships local dev services
-(`docker-compose.yml` with `db` + `redis`). Add a production Dockerfile,
-deploy target, and security settings when the project is ready to ship.
 
 Built with [Seedkit](https://github.com/viewflow/seedkit).

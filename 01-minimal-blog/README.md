@@ -38,25 +38,22 @@ Run the foundation, the boot check (migrate + createsuperuser), and confirm /adm
 
 # 01-minimal-blog
 
-A tiny blog — the bare minimum Django project to verify the seedkit skill works end-to-end.
+A tiny blog to verify the skill works end-to-end.
 
 ## Stack
 
-| Layer | Choice |
-|-------|--------|
-| Framework | Django 6 |
-| Settings | Single `config/settings.py` via `django-environ` |
-| Database | SQLite (`db.sqlite3`) |
-| Request handling | WSGI |
-| Email | Console backend (stdout) |
-| Auth | Vanilla `django.contrib.auth` |
-| Frontend | None |
+- Django 6, single-file settings (`config/settings.py`)
+- SQLite (dev default, no `DATABASE_URL` needed)
+- `django-environ` for env-driven settings
+- WSGI (stock `runserver` / gunicorn-compatible)
+- Email: console backend (`EMAIL_URL=consolemail://`)
+- Vanilla `django.contrib.auth`, no auth add-on
+- Test runner: stock `manage.py test`
 
 ## Setup
 
 ```sh
-cp .env.example .env
-# Edit .env — set DJANGO_SECRET_KEY to a real value for anything beyond local dev
+cp .env.example .env   # then set a real DJANGO_SECRET_KEY
 uv run manage.py migrate
 uv run manage.py createsuperuser
 uv run manage.py runserver
@@ -64,10 +61,12 @@ uv run manage.py runserver
 
 Open <http://127.0.0.1:8000/admin/> and sign in.
 
-## Tests
+## Key commands
 
 ```sh
+uv run manage.py migrate
 uv run manage.py test
+uv run manage.py runserver
 ```
 
 Built with [Seedkit](https://github.com/viewflow/seedkit).

@@ -54,7 +54,10 @@ def stripe_webhook(request):
     except (ValueError, stripe.SignatureVerificationError):
         return HttpResponse(status=400)
 
-    if event["type"] in ("customer.subscription.created", "customer.subscription.updated"):
+    if event["type"] in (
+        "customer.subscription.created",
+        "customer.subscription.updated",
+    ):
         _handle_subscription_updated(event["data"]["object"])
     elif event["type"] == "customer.subscription.deleted":
         _handle_subscription_deleted(event["data"]["object"])

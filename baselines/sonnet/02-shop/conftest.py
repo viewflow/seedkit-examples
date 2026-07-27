@@ -1,3 +1,3 @@
-import django_stubs_ext
+import os
 
-django_stubs_ext.monkeypatch()
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.test")

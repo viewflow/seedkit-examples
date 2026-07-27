@@ -1,61 +1,63 @@
-# 03-jobs-board
+# 03-jobs-board — agent context
 
 Job board with background email notifications and a daily digest.
 
 ## Stack decisions
 
-- Settings layout: single file (`config/settings.py`), env-driven via `django-environ`.
-- Database: PostgreSQL, Postgres-in-Docker for local dev.
-- Request handling: WSGI.
-- Custom user model: no — stock `auth.User`.
-- Auth: `django-mail-auth` (passwordless magic-link) against stock `auth.User`. `auth.User.email` has no unique constraint by default, so `jobs/migrations/0001_auth_user_email_unique.py` adds a partial unique index and `jobs/admin.py` overrides the admin's User forms to validate uniqueness too — otherwise two accounts could share an email and both receive magic-link tokens for it.
-- i18n: enabled, `LANGUAGES = ["en"]`, no URL prefix.
-- Cache: `django-redis` (`REDIS_URL/0`).
-- Background tasks: Celery + Celery Beat, broker `REDIS_URL/1`, results `REDIS_URL/2`. Tasks live in `jobs/tasks.py`, autodiscovered via `app.autodiscover_tasks()` in `config/celery.py`.
-- Email: console backend locally (`EMAIL_URL=consolemail://`).
-- Health checks: `config/views.py` → `/healthz` (liveness), `/readyz` (DB readiness).
+- Settings: single file, `config/settings.py`, env-driven via `django-environ`.
+- Database: PostgreSQL, Postgres in Docker (`docker-compose.yml`, service `db`).
+  Host published port is **5433** (not the default 5432 — that port was already
+  taken by a native Postgres on the scaffolding machine); `redis` published on
+  **6380** for the same reason (default 6379 taken). Adjust `docker-compose.yml`
+  + `.env` `DATABASE_URL` / `REDIS_URL` if your machine is clear of those ports.
+- Custom user model: no. Auth = `django-mail-auth`'s `mailauth.contrib.user.EmailUser`
+  (`AUTH_USER_MODEL = "mailauth_user.EmailUser"`) — no password column.
+- Auth: `django-mail-auth` (passwordless magic-link). `mailauth.contrib.admin` before
+  `django.contrib.admin` in `INSTALLED_APPS` so `/admin/` also uses magic-link login.
+- Background tasks: Celery + Celery Beat, broker/results on Redis DB `/1` and `/2`.
+- Cache: `django-redis`, Redis DB `/0`.
+- Email: console backend in dev (`EMAIL_URL=consolemail://`).
+- i18n: yes — `LocaleMiddleware`, `LANGUAGES`, `LOCALE_PATHS`; ships with `en` only,
+  no language-prefixed URLs (Pattern A — header/cookie detection).
+- Health checks: `/healthz`, `/readyz` in `config/views.py`.
 - Task runner: `just` (`justfile`).
-- No REST API, no frontend, no CORS, no auth hardening (N/A — passwordless), no robots.txt, no django-extensions, no devcontainer, no production/deploy setup.
-
-## Local ports
-
-Host already ran Postgres (5432) and Redis (6379) natively, so
-`docker-compose.yml` publishes this project's containers on **5433** and
-**6380** instead. `.env` / `.env.example` `DATABASE_URL` / `REDIS_URL` match.
+- Test runner: stock `manage.py test`.
+- No: Ruff, pyright/django-stubs, pre-commit, devcontainer, CORS, REST API,
+  frontend, robots.txt, django-extensions, structured logging, production deploy.
 
 ## Layout
 
 ```
-config/
-  settings.py       # single-file settings, env-driven
-  celery.py         # Celery app, autodiscover_tasks()
-  urls.py           # admin, mailauth accounts, healthz/readyz
-  views.py          # liveness / readiness views
-  wsgi.py / asgi.py
-jobs/
-  tasks.py          # @shared_task examples: add(), ping() (Beat-scheduled)
-  admin.py          # UserAdmin override enforcing unique email
-  migrations/0001_auth_user_email_unique.py
-templates/registration/
-  login.html, login_requested.html, logged_out.html   # django-mail-auth views
-docker-compose.yml  # db (postgres:17) + redis, local dev only
-justfile
+03-jobs-board/
+├── config/
+│   ├── settings.py       # single-file settings, env-driven
+│   ├── urls.py            # admin, mailauth, i18n, healthz/readyz
+│   ├── celery.py          # Celery app, autodiscover_tasks()
+│   ├── views.py           # liveness / readiness views
+│   ├── wsgi.py / asgi.py
+│   └── __init__.py        # exposes celery_app
+├── jobs/                  # domain app — registered in INSTALLED_APPS
+│   └── tasks.py           # @shared_task send_daily_digest + CELERY_BEAT_SCHEDULE
+├── templates/
+│   ├── base.html
+│   └── registration/      # mailauth login / login_requested / logged_out
+├── docker-compose.yml      # db (Postgres 17) + redis, local only
+├── justfile
+├── .env.example / .env
+└── manage.py
 ```
 
 ## Key commands
 
 ```sh
-just install            # uv sync
-just dev                # runserver
-just migrate            # apply migrations
-just makemigrations     # generate migrations
-just shell               # Django shell
-just superuser           # createsuperuser
-just test                # manage.py test
-just worker               # celery worker
-just beat                  # celery beat
+docker compose up -d
+just install
+just migrate
+just superuser
+just dev            # runserver
+just worker         # celery worker
+just beat           # celery beat
+just test
 ```
 
-Fallback without `just`: `uv run manage.py <command>`, `uv run celery -A config worker -l info`, `uv run celery -A config beat -l info`.
-
-Local services: `docker compose up -d` (db + redis).
+Fallback without `just`: `uv run manage.py <command>`.

@@ -23,16 +23,7 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=[]
-)  # DEBUG already accepts localhost / 127.0.0.1 / [::1]
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
-    )
-}  # 4 slashes = absolute, survives running manage.py from any cwd
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])
 
 
 # Application definition
@@ -46,10 +37,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "channels",
-    "corsheaders",
-    "django_structlog",
     "django_rq",
     "django_tasks",
+    "django_structlog",
+    "corsheaders",
+    "storages",
     "jobs",
     "api",
 ]
@@ -57,20 +49,14 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
-
-# CORS — insert above CommonMiddleware.
-common_idx = MIDDLEWARE.index("django.middleware.common.CommonMiddleware")
-MIDDLEWARE.insert(common_idx, "corsheaders.middleware.CorsMiddleware")
-
-# structlog — insert after AuthenticationMiddleware (request.user must exist before it binds user_id).
-auth_idx = MIDDLEWARE.index("django.contrib.auth.middleware.AuthenticationMiddleware")
-MIDDLEWARE.insert(auth_idx + 1, "django_structlog.middlewares.RequestMiddleware")
 
 ROOT_URLCONF = "config.urls"
 
@@ -93,6 +79,55 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 
+DATABASES = {
+    "default": env.db(
+        "DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET
+    )
+}  # 4 slashes = absolute, survives running manage.py from any cwd
+
+# Bare scheme://host:port form — no trailing slash, no /<db>. Per-purpose
+# DBs are appended below. .rstrip("/") is a defensive guard so a stray
+# trailing slash from a managed platform doesn't produce redis://host//0.
+REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
+
+# Consumers append /<db> — full map in references/conventions.md.
+# `cache.clear()` only touches /0 — brokers / queues stay intact.
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": f"{REDIS_URL}/0",
+        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    }
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # /4 — the channel layer's slot in the Redis DB map (references/conventions.md).
+        "CONFIG": {"hosts": [f"{REDIS_URL}/4"]},
+    },
+}
+
+TASKS = {
+    "default": {
+        "BACKEND": "django_tasks_rq.RQBackend",
+        "QUEUES": ["default"],
+    }
+}
+
+# django-rq reads RQ_QUEUES separately from TASKS. URL form so host/port
+# come from REDIS_URL. /3 is django-tasks-rq's slot in the Redis DB map
+# (references/conventions.md).
+RQ_QUEUES = {
+    "default": {"URL": f"{REDIS_URL}/3"},
+}
+
+# JOB_CLASS goes in the top-level RQ dict (not RQ_QUEUES[queue]) — django-rq
+# reads it from settings.RQ. Missing this, rqworker falls back to rq.job.Job
+# and every task raises `'Task' object is not callable`.
+RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
+
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
@@ -112,9 +147,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/6.0/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"
@@ -128,50 +160,18 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-
-# Redis — bare scheme://host:port form, no trailing slash, no /<db>.
-# Consumers append their own DB slot (references/conventions.md).
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{REDIS_URL}/0",
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-    }
-}
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # /4 — the channel layer's slot in the Redis DB map (references/conventions.md).
-        "CONFIG": {"hosts": [f"{REDIS_URL}/4"]},
-    },
-}
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
-# Django Tasks — Redis Queue backend
-TASKS = {
-    "default": {
-        "BACKEND": "django_tasks_rq.RQBackend",
-        "QUEUES": ["default"],
-    }
-}
-
-# django-rq reads RQ_QUEUES separately from TASKS. /3 is django-tasks-rq's
-# slot in the Redis DB map (references/conventions.md).
-RQ_QUEUES = {
-    "default": {"URL": f"{REDIS_URL}/3"},
-}
-
-# JOB_CLASS goes in the top-level RQ dict — django-rq reads it from
-# settings.RQ. Missing this, rqworker falls back to rq.job.Job and every
-# task raises `'Task' object is not callable`.
-RQ = {"JOB_CLASS": "django_tasks_rq.Job"}
+# CORS — references/cors.md
+CORS_ALLOWED_ORIGINS = env.list(
+    "DJANGO_CORS_ALLOWED_ORIGINS",
+    default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
+)
+CORS_ALLOW_CREDENTIALS = True  # send cookies / Authorization cross-origin
 
 
-# S3-compatible storage (MinIO in local Compose)
-
+# Storage — S3-compatible (MinIO in local Compose) — references/storage-s3.md
 AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID", default="" if DEBUG else env.NOTSET)
 AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY", default="" if DEBUG else env.NOTSET)
 AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="" if DEBUG else env.NOTSET)
@@ -205,8 +205,7 @@ STORAGES = {
 
 # Derive scheme + host for media URLs. AWS_S3_CUSTOM_DOMAIN wins (CloudFront /
 # bucket vhost). Otherwise fall back to the endpoint host (MinIO in dev) so
-# generated URLs are reachable from the browser — browsers re-download every
-# media object on every view without this.
+# generated URLs are reachable from the browser.
 AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
 
 AWS_S3_URL_PROTOCOL = env("AWS_S3_URL_PROTOCOL", default="https:")
@@ -216,19 +215,7 @@ else:
     MEDIA_URL = "/media/"
 
 
-# CORS
-
-CORS_ALLOWED_ORIGINS = env.list(
-    "DJANGO_CORS_ALLOWED_ORIGINS",
-    default=["http://localhost:3000", "http://127.0.0.1:3000"] if DEBUG else [],
-)
-CORS_ALLOW_CREDENTIALS = True  # send cookies / Authorization cross-origin
-
-
-# Email
-
-# Gated default keeps dev zero-config but fails fast in prod (where DEBUG
-# is unset).
+# Email — console backend in local, gated in prod — references/email.md
 globals().update(
     env.email_url(
         "EMAIL_URL",
@@ -246,8 +233,7 @@ ADMINS = [(email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", de
 MANAGERS = ADMINS
 
 
-# Structured logging (structlog + django-structlog)
-
+# Structured logging — structlog, JSON in prod / pretty in dev — references/logging.md
 # Shared chain. Used as `foreign_pre_chain` (stdlib records) and inside
 # structlog.configure() (structlog-native records). Each record runs it once.
 PRE_CHAIN = [
@@ -295,7 +281,6 @@ structlog.configure(
     wrapper_class=structlog.stdlib.BoundLogger,
     cache_logger_on_first_use=True,
 )
-
 
 try:
     import django_stubs_ext

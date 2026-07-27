@@ -15,10 +15,5 @@ def readyz(request):
 
 
 def robots_txt(request):
-    lines = [
-        "User-agent: *",
-        "Allow: /",
-        "Disallow: /admin/",
-        f"Sitemap: {request.scheme}://{request.get_host()}/sitemap.xml",
-    ]
+    lines = ["User-agent: *", "Allow: /", "", "Sitemap: /sitemap.xml"]
     return HttpResponse("\n".join(lines), content_type="text/plain")

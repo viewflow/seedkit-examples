@@ -1,9 +1,11 @@
 from .base import *
 
-# Guard with `if AWS_STORAGE_BUCKET_NAME:` so this module still boots via the
-# base.py FileSystemStorage fallback when the bucket env is empty (e.g. an
-# ASGI dev run that loads `production.py` directly) — without the guard,
-# boto3 raises `ParamValidationError: Invalid bucket name ""` on every
+# Always set STATIC_URL in prod — without a fallback, missing
+# AWS_S3_CUSTOM_DOMAIN leaves the base `/static/` value pointing at a path
+# the prod app does not serve, so every admin asset 404s. Guard with
+# `if AWS_STORAGE_BUCKET_NAME:` so ASGI projects that load production.py in
+# dev (bucket env may be empty) still boot via the base.py FileSystemStorage
+# fallback — without the guard, boto3 raises ParamValidationError on every
 # admin asset request.
 if AWS_STORAGE_BUCKET_NAME:
     STORAGES = {

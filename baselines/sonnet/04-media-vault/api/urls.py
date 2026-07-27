@@ -4,10 +4,8 @@ from dmr.routing import Router
 from api.controllers import MediaController
 
 router = Router(
-    'api/',
+    "api/",
     [
-        path('media/', MediaController.as_view(), name='media'),
+        path("media/", MediaController.as_view(), name="media"),
     ],
 )
-
-urlpatterns = router.urls

@@ -1,6 +1,5 @@
-from django.db import connections
-from django.db.utils import OperationalError
-from django.http import HttpResponse, HttpResponseServerError
+from django.db import connection
+from django.http import HttpResponse
 
 
 def healthz(request):
@@ -9,9 +8,7 @@ def healthz(request):
 
 
 def readyz(request):
-    """Readiness probe: the process can reach its database."""
-    try:
-        connections["default"].cursor()
-    except OperationalError:
-        return HttpResponseServerError("not ready", content_type="text/plain")
+    """Readiness probe: dependencies the app needs are reachable."""
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
     return HttpResponse("ready", content_type="text/plain")

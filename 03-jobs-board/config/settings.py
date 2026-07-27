@@ -21,18 +21,8 @@ env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
 
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
-SECRET_KEY = env(
-    "DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET
-)
-ALLOWED_HOSTS = env.list(
-    "DJANGO_ALLOWED_HOSTS", default=[]
-)  # DEBUG already accepts localhost / 127.0.0.1 / [::1]
-DATABASES = {
-    "default": env.db(
-        "DATABASE_URL",
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET,
-    )
-}  # 4 slashes = absolute, survives running manage.py from any cwd
+SECRET_KEY = env("DJANGO_SECRET_KEY", default="django-insecure-build-only" if DEBUG else env.NOTSET)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=[])  # DEBUG already accepts localhost / 127.0.0.1 / [::1]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -40,56 +30,60 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Application definition
 
 INSTALLED_APPS = [
-    # mailauth.contrib.admin MUST come before django.contrib.admin — it
-    # overrides the admin login view with the magic-link flow.
-    "mailauth.contrib.admin",
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "mailauth",
-    "jobs",
+    'mailauth.contrib.admin',       # admin login → magic link too
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'mailauth',
+    'mailauth.contrib.user',
+    'jobs',
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-ROOT_URLCONF = "config.urls"
 
 AUTHENTICATION_BACKENDS = [
-    "mailauth.backends.MailAuthBackend",
-    "django.contrib.auth.backends.ModelBackend",
+    'mailauth.backends.MailAuthBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
-LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/"
+AUTH_USER_MODEL = 'mailauth_user.EmailUser'
+
+LOGIN_URL = 'mailauth:login'
+LOGIN_REDIRECT_URL = '/'
+
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
+WSGI_APPLICATION = 'config.wsgi.application'
+
+
+DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}" if DEBUG else env.NOTSET)}
 
 
 # Password validation
@@ -97,16 +91,16 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
 
@@ -116,69 +110,58 @@ AUTH_PASSWORD_VALIDATORS = [
 
 from django.utils.translation import gettext_lazy as _
 
-LANGUAGE_CODE = "en"
+LANGUAGE_CODE = 'en'
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
 USE_TZ = True
 
 LANGUAGES = [
-    ("en", _("English")),
+    ('en', _('English')),
 ]
 
-LOCALE_PATHS = [BASE_DIR / "locale"]
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # Email
-# https://django-environ.readthedocs.io/en/latest/types.html#environ-env-email-url
-
-globals().update(
-    env.email_url(
-        "EMAIL_URL",
-        default="consolemail://" if DEBUG else env.NOTSET,
-    )
-)
+# EMAIL_URL schemes: consolemail:// (dev), smtp[+tls|+ssl]://user:pass@host:port
+globals().update(env.email_url(
+    'EMAIL_URL',
+    default='consolemail://' if DEBUG else env.NOTSET,
+))
 
 DEFAULT_FROM_EMAIL = env(
-    "DEFAULT_FROM_EMAIL",
-    default="webmaster@localhost" if DEBUG else env.NOTSET,
+    'DEFAULT_FROM_EMAIL',
+    default='webmaster@localhost' if DEBUG else env.NOTSET,
 )
-SERVER_EMAIL = env("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+SERVER_EMAIL = env('SERVER_EMAIL', default=DEFAULT_FROM_EMAIL)
 
-ADMINS = [
-    (email.split("@")[0], email) for email in env.list("DJANGO_ADMINS", default=[])
-]
+ADMINS = [(email.split('@')[0], email) for email in env.list('DJANGO_ADMINS', default=[])]
 MANAGERS = ADMINS
 
 
-# Redis cache
-# https://github.com/jazzband/django-redis
-
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379").rstrip("/")
+# Redis / Celery
+REDIS_URL = env('REDIS_URL', default='redis://127.0.0.1:6379').rstrip('/')
 
 CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": f"{REDIS_URL}/0",
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'{REDIS_URL}/0',
+        'OPTIONS': {'CLIENT_CLASS': 'django_redis.client.DefaultClient'},
     }
 }
 
-
-# Celery
-# https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html
-
-CELERY_BROKER_URL = f"{REDIS_URL}/1"
-CELERY_RESULT_BACKEND = f"{REDIS_URL}/2"
+CELERY_BROKER_URL = f'{REDIS_URL}/1'
+CELERY_RESULT_BACKEND = f'{REDIS_URL}/2'
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_TASK_SOFT_TIME_LIMIT = 540
 CELERY_TASK_TIME_LIMIT = 600
@@ -186,8 +169,8 @@ CELERY_TASK_TIME_LIMIT = 600
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
-    "ping-every-minute": {
-        "task": "jobs.tasks.ping",
-        "schedule": crontab(minute="*"),
+    'send-daily-digest': {
+        'task': 'jobs.tasks.send_daily_digest',
+        'schedule': crontab(hour=8, minute=0),
     },
 }

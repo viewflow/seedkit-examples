@@ -11,12 +11,12 @@ sitemaps = {"static": StaticViewSitemap}
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
-    path("", include("pages.urls")),
-    path("billing/", include("billing.urls")),
     path("healthz", healthz, name="healthz"),
     path("readyz", readyz, name="readyz"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    path("billing/", include("billing.urls")),
+    path("", include("pages.urls")),
 ]
 
 if settings.DEBUG:

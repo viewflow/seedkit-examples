@@ -1,22 +1,21 @@
 # Shop
 
-Small e-commerce site with admin and SMTP transactional email, built with Django.
+A small Django e-commerce site with an admin, SMTP transactional email, and Stripe billing.
 
 ## Stack
 
-- Django 6, PostgreSQL, custom `users.User` model (email login)
-- `django-allauth` (email login, mandatory verification, no social providers)
-- `django-axes` for login-attempt lockout
-- `django-tailwind-cli` + DaisyUI for styling, `django-browser-reload` in dev
+- Django 5.1, PostgreSQL
+- django-allauth (email login, mandatory email verification)
+- django-axes (login-attempt lockouts)
+- Tailwind CSS + DaisyUI via django-tailwind-cli
 - WhiteNoise for static files
-- `stripe` (raw SDK) for billing
-- Health checks at `/healthz` and `/readyz`, `robots.txt`, `sitemap.xml`, OG tags
+- Stripe (raw SDK)
+- pytest + pytest-django, Ruff, pyright (django-stubs)
 
-## Local setup
+## Local development
 
 ```sh
 createdb shop_db
-cp .env.example .env
 uv sync
 uv run manage.py migrate
 uv run manage.py tailwind build
@@ -24,16 +23,18 @@ uv run manage.py createsuperuser
 uv run manage.py runserver
 ```
 
-Or via `mise`:
+Or via mise:
 
 ```sh
-mise run install
+mise run setup
 mise run migrate
-mise run css
+mise run tailwind
 mise run dev
 ```
 
-## Tests, lint, type check
+Copy `.env.example` to `.env` and adjust values as needed; local defaults work out of the box against a local Postgres instance.
+
+## Tests, lint, types
 
 ```sh
 uv run pytest
@@ -43,5 +44,11 @@ uv run pyright
 
 ## Production
 
-Multi-stage `Dockerfile` (uv builder → `python:3.12-slim-bookworm` runtime), deployed
-behind Caddy on a VPS — see `deploy/Caddyfile` and `deploy/docker-compose.prod.yml`.
+Build and run with Docker (multi-stage build, Caddy reverse proxy):
+
+```sh
+cd deploy
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Set the required variables in `.env` first (see `.env.example`).

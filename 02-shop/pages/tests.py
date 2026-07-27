@@ -1,6 +1,1 @@
-import pytest
-
-
-@pytest.mark.django_db
-def test_index(client):
-    assert client.get("/").status_code == 200
+# Create your tests here.

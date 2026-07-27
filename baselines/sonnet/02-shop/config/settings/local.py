@@ -1,19 +1,16 @@
 """Local development settings."""
 from .base import *  # noqa: F403
-from .base import INSTALLED_APPS, MIDDLEWARE
+from .base import MIDDLEWARE, env
 
 DEBUG = True
-
-ALLOWED_HOSTS = ["*"]
-
-INSTALLED_APPS += ["django_browser_reload"]
-
-MIDDLEWARE += ["django_browser_reload.middleware.BrowserReloadMiddleware"]
-
-# django-axes locks out real logins during local iteration; keep it off by default.
-AXES_ENABLED = False
-
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-
-# Allow browser-reload / tailwind-cli to run without extra network calls.
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 INTERNAL_IPS = ["127.0.0.1"]
+
+MIDDLEWARE = [*MIDDLEWARE, "django_browser_reload.middleware.BrowserReloadMiddleware"]
+
+EMAIL_BACKEND = env.str(
+    "DJANGO_EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend"
+)
+
+# Relax lockouts and slow hashing during local development.
+AXES_ENABLED = False

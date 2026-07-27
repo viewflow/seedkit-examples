@@ -1,8 +1,5 @@
 """
-Django settings for config project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/topics/settings/
+Django settings for the jobs board project.
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
@@ -20,12 +17,12 @@ environ.Env.read_env(BASE_DIR / ".env")
 
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY", default="django-insecure-@bsn78!yru2hg3jpmw7z-_6=m0lszr7vpn3h400k2ea*d-nhhu")
+SECRET_KEY = env.str("DJANGO_SECRET_KEY", default="django-insecure-icxz4vfz)0=yw(9rf+h(^h4@!n%=nakl%2!&49kof(!mi5y5$u")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG", default=True)
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 
 # Application definition
@@ -37,7 +34,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django.contrib.sites",
     "mailauth",
     "jobs",
 ]
@@ -62,17 +58,16 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "django.template.context_processors.i18n",
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-ASGI_APPLICATION = "config.asgi.application"
 
 
 # Database
@@ -81,9 +76,24 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": env.db(
         "DATABASE_URL",
-        default="postgres://jobs_board:jobs_board@127.0.0.1:5432/jobs_board",
+        default="postgres://jobs_board:jobs_board@127.0.0.1:15432/jobs_board",
     ),
 }
+
+
+# Authentication
+# https://django-mail-auth.readthedocs.io/
+
+AUTHENTICATION_BACKENDS = [
+    "mailauth.backends.MailAuthBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+
+LOGIN_URL = "mailauth:login"
+LOGIN_REDIRECT_URL = "/"
+
+# How long a login link stays valid, in seconds.
+LOGIN_URL_TIMEOUT = 60 * 15
 
 
 # Password validation
@@ -104,32 +114,23 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend",
-    "mailauth.backends.MailAuthBackend",
-)
-
-SITE_ID = 1
-
-LOGIN_URL = "mailauth:login"
-LOGIN_REDIRECT_URL = "/"
-
-# How long a login link/token stays valid, in seconds.
-LOGIN_URL_TIMEOUT = env.int("LOGIN_URL_TIMEOUT", default=60 * 15)
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
 LANGUAGE_CODE = "en-us"
 
+LANGUAGES = [
+    ("en", "English"),
+]
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
 TIME_ZONE = "UTC"
 
 USE_I18N = True
 
 USE_TZ = True
-
-LOCALE_PATHS = [BASE_DIR / "locale"]
 
 
 # Static files (CSS, JavaScript, Images)
@@ -141,19 +142,19 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 
 # Email
-# https://docs.djangoproject.com/en/6.0/topics/email/
+# https://django-environ.readthedocs.io/en/latest/types.html#environ-env-email-url
 
-vars().update(env.email_url("EMAIL_URL", default="consolemail://"))
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="webmaster@localhost")
+EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
+vars().update(EMAIL_CONFIG)
+
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="jobs-board@example.com")
 
 
 # Celery
 # https://docs.celeryq.dev/en/stable/userguide/configuration.html
 
-REDIS_URL = env("REDIS_URL", default="redis://127.0.0.1:6379/0")
-
-CELERY_BROKER_URL = REDIS_URL
-CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://127.0.0.1:16379/0")
+CELERY_RESULT_BACKEND = env.str("CELERY_RESULT_BACKEND", default="redis://127.0.0.1:16379/0")
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -162,6 +163,6 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
     "send-daily-digest": {
         "task": "jobs.tasks.send_daily_digest",
-        "schedule": crontab(hour=7, minute=0),
+        "schedule": crontab(hour=6, minute=0),
     },
 }

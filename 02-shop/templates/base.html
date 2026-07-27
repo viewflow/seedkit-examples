@@ -4,21 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}02-shop{% endblock %}</title>
+    <title>{% block title %}Shop{% endblock %}</title>
+    {% tailwind_css %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
     {% block meta %}
-    <meta name="description" content="{{ meta_description|default:'Small e-commerce shop.' }}">
+    <meta name="description" content="{{ meta_description|default:'Small e-commerce site with admin and transactional email.' }}">
     <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
     <meta property="og:type" content="website">
-    <meta property="og:site_name" content="02-shop">
-    <meta property="og:title" content="{{ meta_title|default:'02-shop' }}">
-    <meta property="og:description" content="{{ meta_description|default:'Small e-commerce shop.' }}">
+    <meta property="og:site_name" content="Shop">
+    <meta property="og:title" content="{{ meta_title|default:'Shop' }}">
+    <meta property="og:description" content="{{ meta_description|default:'Small e-commerce site with admin and transactional email.' }}">
     <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
     <meta name="twitter:card" content="summary">
     {% endblock %}
-    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
-    {% tailwind_css %}
 </head>
-<body class="min-h-screen bg-base-100 text-base-content">
+<body class="bg-gray-50 text-gray-900">
     <div class="container mx-auto px-4 py-8">
         {% block content %}{% endblock %}
     </div>

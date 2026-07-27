@@ -1,37 +1,37 @@
 set dotenv-load := true
 
-# start Postgres and Redis
+# Start Postgres and Redis in Docker
 up:
     docker compose up -d
 
-# stop Postgres and Redis
+# Stop Postgres and Redis
 down:
     docker compose down
 
-# run the Django development server
-run:
-    uv run manage.py runserver
-
-# apply database migrations
+# Apply database migrations
 migrate:
     uv run manage.py migrate
 
-# create a new migration
-makemigrations *args:
-    uv run manage.py makemigrations {{args}}
+# Create a Django admin superuser
+createsuperuser:
+    uv run manage.py createsuperuser
 
-# run the test suite
-test *args:
-    uv run manage.py test {{args}}
+# Run the development server
+run:
+    uv run manage.py runserver
 
-# open a Django shell
-shell:
-    uv run manage.py shell
-
-# run a Celery worker
+# Run the Celery worker
 worker:
     uv run celery -A config worker -l info
 
-# run the Celery Beat scheduler
+# Run the Celery Beat scheduler
 beat:
     uv run celery -A config beat -l info
+
+# Run the test suite
+test:
+    uv run manage.py test
+
+# Open a Django shell
+shell:
+    uv run manage.py shell

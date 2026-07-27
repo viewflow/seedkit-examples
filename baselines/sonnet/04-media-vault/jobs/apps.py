@@ -2,8 +2,7 @@ from django.apps import AppConfig
 
 
 class JobsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'jobs'
+    name = "jobs"
 
-    def ready(self):
+    def ready(self) -> None:
         from jobs import tasks  # noqa: F401
