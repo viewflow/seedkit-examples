@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% for post in posts %}
+    <article>
+      <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+      <time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"j F Y" }}</time>
+    </article>
+  {% empty %}
+    <p>No posts yet. Add one in <a href="/admin/">the admin</a>.</p>
+  {% endfor %}
+
+  {% if page_obj.has_other_pages %}
+    <nav>
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">&larr; Newer</a>{% endif %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">Older &rarr;</a>{% endif %}
+    </nav>
+  {% endif %}
+{% endblock %}

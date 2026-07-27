@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Minimal Blog{% endblock %}</title>
+    <style>
+      body { max-width: 42rem; margin: 3rem auto; padding: 0 1rem;
+             font: 16px/1.6 system-ui, sans-serif; color: #222; }
+      a { color: #06c; }
+      header { border-bottom: 1px solid #ddd; margin-bottom: 2rem; }
+      article + article { border-top: 1px solid #eee; padding-top: 1rem; }
+      time { color: #777; font-size: .875rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1><a href="{% url 'blog:post_list' %}">Minimal Blog</a></h1>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
