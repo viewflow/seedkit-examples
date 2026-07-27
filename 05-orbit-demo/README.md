@@ -36,86 +36,51 @@ Run the foundation + boot check. Spin up Mailpit via a one-service `docker-compo
 
 # 05-orbit-demo
 
-Scratch project to exercise `django-orbit` (observability dashboard + MCP) and verify outbound mail flows are captured via Mailpit.
+Scratch project to exercise django-orbit and verify outbound mail flows are captured.
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Django 6.x |
-| Database | SQLite (dev) |
-| Request handling | WSGI (gunicorn in prod) |
-| Debug dashboard | `django-orbit` at `/orbit/` |
-| Email (dev) | SMTP → Mailpit (`localhost:1025`) |
-| Email (prod) | Set `EMAIL_URL` env var |
-| Health checks | `/healthz` (liveness), `/readyz` (readiness) |
-| Linter | Ruff |
-| Test runner | `manage.py test` |
+- Django 6, single-file settings (`config/settings.py`), SQLite.
+- Lint: Ruff.
+- Test runner: stock `manage.py test`.
+- No i18n, no custom user model, no auth add-on, no structured logging, no task runner.
+- Debug: [django-orbit](https://github.com/kmmbvnr/django-orbit) — observability dashboard at `/orbit/` (dev-only).
+- Email: console backend, `smtp://localhost:1025` when Mailpit is running (`docker-compose.yml`, UI at `:8025`).
+- `mailer` app: HTML email base template (`templates/email/base.html`) + `send_test_email` command.
+- Health checks: `/healthz` (liveness), `/readyz` (readiness).
 
 ## Setup
 
 ```sh
-cp .env.example .env
-# edit .env — set a real DJANGO_SECRET_KEY
+cp .env.example .env   # then set DJANGO_SECRET_KEY
+uv sync
 uv run manage.py migrate
 uv run manage.py createsuperuser
+```
+
+## Run
+
+```sh
+docker compose up -d mailpit   # SMTP :1025, web UI :8025
 uv run manage.py runserver
 ```
 
-## Mailpit (local email inspection)
+Visit `/admin/`, `/orbit/`, and Mailpit's UI at <http://localhost:8025>.
 
-Captures all outgoing SMTP. Open <http://localhost:8025> to view mail.
-
-```sh
-docker compose up -d mailpit
-# EMAIL_URL=smtp://localhost:1025 must be set in .env (already the default)
-```
-
-Send the HTML+text test mail and check it landed in Mailpit:
+## Send a test email
 
 ```sh
 uv run manage.py send_test_email you@example.com
 ```
 
-## Orbit (observability dashboard)
+With Mailpit running, inspect the rendered HTML at <http://localhost:8025>.
 
-`http://localhost:8000/orbit/` — requests, SQL, logs, exceptions, cache, ORM events, emails.
-
-**MCP integration** (AI assistants query live telemetry):
-
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "django-orbit": {
-      "command": "uv",
-      "args": ["run", "manage.py", "orbit_mcp"],
-      "cwd": "/path/to/05-orbit-demo",
-      "env": {"DJANGO_SETTINGS_MODULE": "config.settings"}
-    }
-  }
-}
-```
-
-## Health checks
+## Commands
 
 ```sh
-curl http://localhost:8000/healthz   # → ok
-curl http://localhost:8000/readyz    # → ready
+uv run manage.py test      # test
+uv run ruff check .        # lint
+uv run ruff format .       # format
 ```
 
-## Lint
-
-```sh
-uv run ruff check .
-uv run ruff format --check .
-```
-
-## Test
-
-```sh
-uv run manage.py test
-```
-
-Built with [Seedkit](https://github.com/RobustaRush/seedkit).
+Built with [Seedkit](https://github.com/viewflow/seedkit).

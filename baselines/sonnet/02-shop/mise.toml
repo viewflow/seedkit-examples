@@ -1,0 +1,35 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[tasks.install]
+description = "Install Python dependencies"
+run = "uv sync"
+
+[tasks.css]
+description = "Build the Tailwind CSS bundle"
+run = "uv run manage.py tailwind build"
+
+[tasks.dev]
+description = "Run the dev server with Tailwind watch"
+run = "uv run manage.py tailwind runserver"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run manage.py migrate"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint with Ruff"
+run = "uv run ruff check ."
+
+[tasks.typecheck]
+description = "Type-check with pyright"
+run = "uv run pyright"
+
+[tasks.check]
+description = "Run lint, typecheck and tests"
+depends = ["lint", "typecheck", "test"]

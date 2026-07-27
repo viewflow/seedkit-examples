@@ -8,9 +8,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      # Host port 5433 (not 5432): this dev machine already runs a native
-      # Postgres on 5432 outside Docker — remap to avoid a bind conflict.
-      - "127.0.0.1:5433:5432"   # host Django reaches it via localhost
+      - "127.0.0.1:5433:5432"   # host Django reaches it via localhost; 5432 taken by a host-level Homebrew postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -20,9 +18,7 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      # Host port 6380 (not 6379): this dev machine already runs a native
-      # Redis on 6379 outside Docker — remap to avoid a bind conflict.
-      - "127.0.0.1:6380:6379"   # host Django / workers reach it via localhost
+      - "127.0.0.1:6380:6379"   # host Django / workers reach it via localhost; 6379 taken by a host-level Homebrew redis
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

@@ -1,9 +1,0 @@
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-.env
-db.sqlite3
-staticfiles/
-media/
-.DS_Store

@@ -8,7 +8,6 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
-# Django Tasks (via django-tasks-rq, which targets the django_tasks backport
-# package, not the django.tasks stdlib module — see jobs/tasks.py): run inline
-# in the request thread so tests see results without a worker.
+# Django Tasks (django-tasks-rq backport): run inline in the request thread
+# so tests see results without a worker.
 TASKS = {"default": {"BACKEND": "django_tasks.backends.immediate.ImmediateBackend"}}

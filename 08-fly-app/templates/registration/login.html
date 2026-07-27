@@ -1,5 +1,8 @@
-{% extends "base.html" %}
-{% block content %}
+<!DOCTYPE html>
+<html>
+<head><title>Sign in</title></head>
+<body>
 <h1>Sign in</h1>
-<form method="post">{% csrf_token %}{{ form }}<button>Send link</button></form>
-{% endblock %}
+<form method="post">{% csrf_token %}{{ form }}<button type="submit">Send link</button></form>
+</body>
+</html>

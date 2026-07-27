@@ -54,64 +54,98 @@ Production app deployed to a remote host over SSH from GitHub Actions, using sel
 ## Stack
 
 - Django 6, split settings (`config/settings/{base,local,production,test}.py`)
-- PostgreSQL 17, Postgres-in-Docker for local dev (`docker-compose.yml`)
-- Redis — cache + Django Tasks RQ broker
-- Django Tasks with the Redis Queue backend (`django-tasks-rq` + `django-rq`); tasks live in `jobs/tasks.py`
-- Structured logging via `structlog` + `django-structlog` — pretty console in dev, JSON in prod, per-request `request_id`
-- Analytics: Umami (self-hosted, env-driven website id and host)
-- Health checks: `/healthz` (liveness), `/readyz` (DB reachable)
-- Lint: Ruff. Tests: pytest + pytest-django. No type checking, no pre-commit hooks, no i18n, no custom user model, no auth add-on.
-- Task runner: mise (`mise.toml`)
-- Security: Django's HSTS / secure-cookie / SSL-redirect settings + `django-csp` in `config/settings/production.py`
-- Error reporting: Bugsink (self-hosted, Sentry-protocol) via `sentry-sdk`, with PII scrubbing (GDPR)
-- User data export/delete management commands (`jobs/management/commands/`) for GDPR requests
-- Database backups: `django-dbbackup` to an S3-compatible bucket (self-managed host, no native backup service)
-- CI: GitHub Actions test workflow
-- Deploy: GitHub Actions over SSH (rsync-free — builds + pushes a GHCR image, then `docker compose pull && migrate && up -d` on the host)
-- Production Dockerfile: multi-stage — uv builder → `python:3.12-slim-bookworm` runtime
+- PostgreSQL (Postgres-in-Docker for local dev — `db` + `redis` in `docker-compose.yml`)
+- Redis — cache (`/0`) + `django-tasks-rq` queue (`/3`)
+- Background tasks — Django Tasks with the Redis Queue backend (`django-tasks-rq`), app: `jobs`
+- Structured logging — `structlog` + `django-structlog` (pretty console in dev, JSON in prod, request-scoped `request_id`)
+- Analytics — Umami (self-hosted, env-driven website ID + host)
+- Lint — Ruff
+- Tests — pytest + pytest-django
+- Task runner — mise
+- Health checks — `/healthz` (liveness), `/readyz` (DB readiness)
+- Security — Django deploy security settings + CSP (`django-csp`)
+- Error reporting — Bugsink (self-hosted, Sentry protocol), PII scrubbed
+- GDPR — user data export/delete management commands (`jobs/management/commands/`)
+- Database backups — `django-dbbackup` to S3-compatible storage
+- CI — GitHub Actions (`.github/workflows/test.yml`)
+- Deploy — GitHub Actions via SSH: rsync-free, builds+pushes a GHCR image, then `ssh` runs `docker compose pull && migrate && up -d` (`.github/workflows/deploy.yml`)
+- Production image — multi-stage: `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` builder → `python:3.12-slim-bookworm` runtime
 
-## Local dev ports
-
-This dev machine already runs native Postgres (5432) and Redis (6379) outside Docker, so the local `docker-compose.yml` remaps to avoid bind conflicts:
-
-- Postgres: `127.0.0.1:5435` → container `5432`
-- Redis: `127.0.0.1:6381` → container `6379`
-
-Adjust `DATABASE_URL` / `REDIS_URL` in `.env` (and the port mappings in `docker-compose.yml`) if your machine is free of conflicts and you'd rather use the standard `5432` / `6379`.
-
-## Key commands
+## Setup
 
 ```sh
-cp .env.example .env          # then set a real DJANGO_SECRET_KEY
-mise trust && mise install
+cp .env.example .env   # then set a real DJANGO_SECRET_KEY
+docker compose up -d   # db + redis
 mise run install
-docker compose up -d           # db + redis
 mise run migrate
 mise run superuser
-mise run dev                    # runserver
-mise run worker                 # rqworker default, in a second terminal
-mise run test
-mise run lint
-mise run fmt
+mise run dev
 ```
 
-Fallback without mise: `uv run manage.py <command>` for every task above.
+Open <http://127.0.0.1:8000/admin/> and sign in.
+
+In a second terminal, run the background worker:
+
+```sh
+mise run worker
+```
+
+Fallback without mise: `uv run manage.py <command>`.
+
+## Commands
+
+| Task | mise | Fallback |
+| --- | --- | --- |
+| install deps | `mise run install` | `uv sync` |
+| run dev server | `mise run dev` | `uv run manage.py runserver` |
+| migrate | `mise run migrate` | `uv run manage.py migrate` |
+| makemigrations | `mise run makemigrations` | `uv run manage.py makemigrations` |
+| shell | `mise run shell` | `uv run manage.py shell` |
+| superuser | `mise run superuser` | `uv run manage.py createsuperuser` |
+| test | `mise run test` | `uv run pytest` |
+| lint | `mise run lint` | `uv run ruff check .` |
+| format | `mise run fmt` | `uv run ruff format .` |
+| task worker | `mise run worker` | `uv run manage.py rqworker default` |
+| collectstatic | `mise run collectstatic` | `uv run manage.py collectstatic --noinput` |
+
+First-time mise setup: `mise trust && mise install`.
+
+## Local ports
+
+The local `docker-compose.yml` publishes Postgres on `127.0.0.1:5433` and Redis on `127.0.0.1:6380`
+(shifted from the defaults 5432/6379 to avoid clashing with any host-native Postgres/Redis already
+running on this machine). `.env` matches these ports.
 
 ## Deploy
 
-Secrets set in repo settings: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `GHCR_TOKEN` (a PAT with `read:packages`, used by the **server** to pull private images).
+Deploy target: GitHub Actions via SSH. Every push to `main` runs the test workflow, builds and pushes
+a Docker image to GHCR, then SSHes into the host and runs `docker compose pull && migrate && up -d`.
 
-First deploy — create `deploy/.env.prod` on the host from `deploy/.env.prod.example`, then:
+Repo secrets required: `SSH_HOST`, `SSH_USER`, `SSH_KEY`, `GHCR_TOKEN` (a PAT with `read:packages`,
+used by the server to pull the private image).
+
+First-time server setup:
 
 ```sh
-ssh user@host
+ssh user@vps
+mkdir -p /srv/09-ssh-deploy/deploy
 cd /srv/09-ssh-deploy
-export GITHUB_REPOSITORY=owner/repo
+# copy deploy/docker-compose.prod.yml, deploy/Caddyfile into place
+cp deploy/.env.prod.example deploy/.env.prod   # fill in real secrets
+export GITHUB_REPOSITORY=owner/repo IMAGE_TAG=latest
 docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml pull
 docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml run --rm web python manage.py migrate
 docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d
 ```
 
-After that, `.github/workflows/deploy.yml` handles every push to `main`: it builds + pushes the image to GHCR, then SSHes in to pull, migrate, and restart. Database backups run via `django-dbbackup` — schedule `dbbackup` / `mediabackup` with a cron line on the host (see `references/dbbackup.md` in the seedkit skill for the exact crontab).
+After that, every push to `main` deploys automatically. Rollback:
 
-Built with [Seedkit](https://github.com/RobustaRush/seedkit).
+```sh
+ssh user@vps
+cd /srv/09-ssh-deploy
+export GITHUB_REPOSITORY=owner/repo IMAGE_TAG=<known-good commit sha>
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml pull web
+docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d web
+```
+
+Built with [Seedkit](https://github.com/viewflow/seedkit).

@@ -1,6 +1,5 @@
 from .base import *
 
-# SQLite production tuning — requires Django 5.1+ for `transaction_mode` / `init_command`.
 DATABASES["default"]["OPTIONS"] = {
     "transaction_mode": "IMMEDIATE",  # avoid SQLITE_BUSY under concurrent writers
     "timeout": 5,  # seconds to wait on a locked DB
@@ -12,20 +11,43 @@ DATABASES["default"]["OPTIONS"] = {
         "PRAGMA cache_size=2000;"  # pages (~ 8 MiB)
     ),
 }
+
 DATABASES["cache"]["OPTIONS"] = DATABASES["default"]["OPTIONS"]
+
+sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
+MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+
+# allauth.mfa — enrollment stays opt-in from the account page; no setting
+# forces MFA at login.
+MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
+MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
+ACCOUNT_REAUTHENTICATION_REQUIRED = True
+
+
+# Security
+# https://docs.djangoproject.com/en/stable/topics/security/
 
 # HTTPS — env-toggle so smoke / staging / direct-gunicorn access can run
 # without TLS. Hardcoding True returns 301 on every plain-HTTP probe.
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
-# Exempt healthcheck endpoints — internal probes hit the container directly
-# without traversing the TLS proxy, so they arrive as plain HTTP and would be
-# 301-redirected, making the probe never see 200.
+# Exempt healthcheck endpoints — managed-platform internal probes (Fly,
+# Railway, k8s) hit the container directly without traversing the TLS
+# proxy, so they arrive as plain HTTP and would be 301-redirected,
+# making the probe never see 200.
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
 # X-Forwarded-Proto trust. ONLY enable when there's a TLS-terminating proxy
-# (Caddy here) in front of gunicorn. Without one, any client on the open port
-# can spoof X-Forwarded-Proto: https and Django will treat the request as
-# secure — bypassing SECURE_SSL_REDIRECT and CSRF cookie protections.
+# (Caddy / nginx / managed load balancer) in front of gunicorn. Without one,
+# any client on the open port can spoof X-Forwarded-Proto: https and Django
+# will treat the request as secure — bypassing SECURE_SSL_REDIRECT and
+# CSRF cookie protections.
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -51,7 +73,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True  # Django default but worth being explicit
 # checking failed".
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# Content Security Policy
+
+# Content Security Policy — django-csp
+# https://django-csp.readthedocs.io/
+
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
@@ -71,26 +96,10 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# WhiteNoise — insert directly after SecurityMiddleware, switch staticfiles to manifest storage
-sec_idx = MIDDLEWARE.index("django.middleware.security.SecurityMiddleware")
-MIDDLEWARE.insert(sec_idx + 1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
-}
+# Error reporting — Sentry
+# https://docs.sentry.io/platforms/python/integrations/django/
 
-# allauth — verification link only goes to stdout with console email, so this
-# is safe in prod (real SMTP) but would be painful for local signup.
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
-
-# 2FA — allauth.mfa. Only force 2FA in prod; leave it optional in dev so
-# seeded superusers can log in.
-MFA_TOTP_ISSUER = env("DJANGO_SITE_DOMAIN", default="example.com")
-MFA_SUPPORTED_TYPES = ["totp", "recovery_codes"]
-ACCOUNT_REAUTHENTICATION_REQUIRED = True
-
-# Error reporting — Sentry SaaS
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk

@@ -35,7 +35,7 @@ run = "uv run pyright"
 run = "uv run manage.py collectstatic --noinput"
 
 [tasks.worker]
-run = "uv run manage.py db_worker"
+run = "DJANGO_SETTINGS_MODULE=config.settings.local uv run manage.py db_worker"
 
 [tasks.deploy]
 run = "docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d"

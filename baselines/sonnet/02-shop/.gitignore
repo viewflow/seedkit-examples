@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+db.sqlite3
+staticfiles/
+assets/css/tailwind.css
+/.django_tailwind_cli/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.DS_Store

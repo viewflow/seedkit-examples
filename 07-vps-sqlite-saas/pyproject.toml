@@ -5,26 +5,26 @@ requires-python = ">=3.12"
 dependencies = [
     "django>=6.0,<7.0",
     "django-allauth[mfa]>=65.18.0",
-    "django-axes>=8.3.1",
+    "django-axes[ipware]>=8.3.1",
     "django-csp>=4.0",
     "django-environ>=0.14.0",
     "django-structlog>=10.1.0",
     "django-tasks-db>=0.12.0",
     "gunicorn>=26.0.0",
-    "sentry-sdk>=2.64.0",
+    "sentry-sdk>=2.66.1",
     "structlog>=26.1.0",
     "whitenoise>=6.12.0",
 ]
 
 [dependency-groups]
 dev = [
-    "django-stubs>=6.0.6",
-    "django-stubs-ext>=6.0.6",
-    "pre-commit>=4.6.0",
+    "django-stubs>=6.0.7",
+    "django-stubs-ext>=6.0.7",
+    "pre-commit>=4.6.1",
     "pyright>=1.1.411",
     "pytest>=9.1.1",
     "pytest-django>=4.12.0",
-    "ruff>=0.15.20",
+    "ruff>=0.16.0",
 ]
 
 [tool.ruff]
@@ -52,18 +52,14 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**"      = ["S"]
 "**/test_*.py"     = ["S"]
-"**/tests.py"      = ["S"]
-"**/settings/*.py" = ["F405", "F403", "S105", "S106"]
+"**/tests.py"      = ["S"]                   # Django's default `startapp` stub
+"**/settings/*.py" = ["F405", "F403", "S105", "S106"]  # star imports + dev-only SECRET_KEY / password defaults
 
 [tool.ruff.lint.isort]
 known-first-party = ["config", "users", "jobs"]
 
 [tool.ruff.format]
 quote-style = "double"
-
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.test"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
 
 [tool.pyright]
 include = ["."]
@@ -77,8 +73,12 @@ exclude = [
 ]
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportMissingTypeStubs = "none"
 strictListInference = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]

@@ -9,26 +9,26 @@ primary_region = "iad"
   DJANGO_BEHIND_PROXY = "True"        # Fly's edge terminates TLS
 
 # Required prod settings come from `fly secrets set` — do NOT hardcode here:
-#   DJANGO_SECRET_KEY            — generate with secrets.token_urlsafe
-#   DJANGO_ALLOWED_HOSTS         — your fly.dev hostname + custom domain
-#   DJANGO_CSRF_TRUSTED_ORIGINS  — https://<host> for each allowed host
-#   DATABASE_URL                 — auto-set by `fly postgres attach`
-#   REDIS_URL                    — auto-set by `fly redis attach`
-#   POSTMARK_SERVER_TOKEN        — see references/email.md
-#   ANYMAIL_WEBHOOK_SECRET
+#   DJANGO_SECRET_KEY           — generate with secrets.token_urlsafe
+#   DJANGO_ALLOWED_HOSTS        — your fly.dev hostname + custom domain
+#   DJANGO_CSRF_TRUSTED_ORIGINS — https://<host> for each allowed host
+#   DATABASE_URL                — auto-set by `fly postgres attach`
+#   REDIS_URL                   — auto-set by `fly redis attach`
+#   EMAIL_URL / POSTMARK_SERVER_TOKEN / ANYMAIL_WEBHOOK_SECRET
 #   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_STORAGE_BUCKET_NAME / AWS_S3_REGION_NAME
-#   ANALYTICS_ID                 — GA4 measurement ID
-#   SENTRY_DSN                   — GlitchTip DSN
+#   SENTRY_DSN                  — if error-reporting wired
+#   ANALYTICS_ID
 
 [deploy]
-  # `python` not `uv run`: the multi-stage runtime image (python:3.12-slim-bookworm)
-  # has no uv binary — only the venv at /opt/venv with /opt/venv/bin on PATH.
+  # `python` not `uv run`: the multi-stage Dockerfile's runtime stage
+  # (python:3.12-slim-bookworm) has no uv binary — only the venv at
+  # /opt/venv with /opt/venv/bin on PATH, so `python` resolves there.
   release_command = "python manage.py migrate && python manage.py collectstatic --noinput"
 
 [processes]
   web    = "gunicorn config.wsgi --bind 0.0.0.0:8000"
   worker = "celery -A config worker -l info"
-  bolt   = "env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8002"
+  bolt   = "env DJANGO_SETTINGS_MODULE=config.settings.bolt python manage.py runbolt --port 8001"
 
 [[services]]
   internal_port = 8000

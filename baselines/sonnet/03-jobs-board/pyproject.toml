@@ -1,0 +1,13 @@
+[project]
+name = "jobs-board"
+version = "0.1.0"
+description = "Job board with background email notifications and a daily digest."
+requires-python = ">=3.12"
+dependencies = [
+    "celery>=5.6.3",
+    "django>=6.0.7",
+    "django-environ>=0.14.0",
+    "django-mail-auth>=3.5.5",
+    "psycopg[binary]>=3.3.4",
+    "redis>=8.0.1",
+]

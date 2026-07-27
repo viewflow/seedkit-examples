@@ -1,14 +1,21 @@
+# The default json-file log driver grows without bound — cap it once here
+# and attach to every service, or the VPS disk fills in a few months.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   web:
     image: ghcr.io/{owner}/02-shop:latest
     restart: unless-stopped
     env_file: .env.prod
-    volumes:
-      - media:/app/media
-      - backups:/app/backups
+    logging: *logging
     healthcheck:
       # python+urllib instead of curl — the prod image only installs
-      # postgresql-client and slim has no curl.
+      # postgresql-client and slim has no curl. DJANGO_ALLOWED_HOSTS must
+      # include localhost (see deploy/.env.prod.example) or this probe 400s.
       test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/healthz\",timeout=2).status==200 else 1)'"]
       interval: 10s
       timeout: 3s
@@ -25,6 +32,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    logging: *logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -41,7 +49,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
-      - media:/srv/media:ro
+    logging: *logging
     depends_on:
       - web
 
@@ -49,5 +57,3 @@ volumes:
   pgdata:
   caddy_data:
   caddy_config:
-  media:
-  backups:

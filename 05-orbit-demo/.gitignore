@@ -2,8 +2,11 @@
 .env
 *.sqlite3
 staticfiles/
+media/
 .ruff_cache/
+
 __pycache__/
-*.pyc
-.DS_Store
+*.py[cod]
 *.egg-info/
+.DS_Store
+.pytest_cache/

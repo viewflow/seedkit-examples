@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Django
+*.sqlite3
+/staticfiles/
+/media/
+
+# Env
+.env
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Type checking / test caches
+.pyright/
+.pytest_cache/
+.ruff_cache/

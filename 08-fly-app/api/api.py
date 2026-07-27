@@ -1,10 +1,12 @@
 import msgspec
-from django.contrib.auth import get_user_model
 from django_bolt import BoltAPI
 
-api = BoltAPI()
+# Import the concrete model — get_user_model() returns a generic type that
+# hides `.id` / `.email` from pyright. The project's user model is
+# mailauth's EmailUser (no username field — auth is email-only).
+from mailauth.contrib.user.models import EmailUser
 
-User = get_user_model()
+api = BoltAPI()
 
 
 class UserSchema(msgspec.Struct):
@@ -14,5 +16,5 @@ class UserSchema(msgspec.Struct):
 
 @api.get("/users/{user_id}")
 async def get_user(user_id: int) -> UserSchema:
-    user = await User.objects.aget(id=user_id)
-    return UserSchema(id=user.pk, username=user.get_username())
+    user = await EmailUser.objects.aget(id=user_id)
+    return UserSchema(id=user.pk, username=str(user.email))

@@ -1,0 +1,7 @@
+Test email
+
+This is a test message sent by "manage.py send_test_email" to confirm outbound
+mail is wired up correctly and captured by Mailpit.
+
+If you can read this, check the Mailpit UI at http://localhost:8025 to see the
+HTML version too.

@@ -1,4 +1,8 @@
 example.com {     # replace with the real domain — Caddy fails to issue TLS for example.com
+    encode zstd gzip          # Caddy doesn't compress by default; WhiteNoise only covers /static/
+    request_body {
+        max_size 10MB         # Caddy's default is unlimited — raise per project if uploads need more
+    }
     handle /media/* {
         uri strip_prefix /media   # without this, file_server resolves /srv/media/media/<file>
         root * /srv/media

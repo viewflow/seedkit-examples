@@ -22,6 +22,7 @@ Add-ons:
   - tasks: Django Tasks with the Database backend (`django-tasks-db`). Also `uv run manage.py startapp jobs`, register `jobs` in `INSTALLED_APPS`, wire `jobs/apps.py` `ready()` to import `tasks`, and add a sample `@task` to `jobs/tasks.py`.
   - storage: WhiteNoise (static), media volume on the VPS host
   - email: SMTP in production, console backend in local. Use a placeholder Postmark URL (`EMAIL_URL=smtp+tls://<token>:<token>@smtp.postmarkapp.com:587`); also wire `DEFAULT_FROM_EMAIL`, `SERVER_EMAIL`, `DJANGO_ADMINS`.
+  - HTML email base template: no.
   - CORS: no.
   - REST API: none.
   - Frontend: none.
@@ -48,95 +49,48 @@ Run the foundation + boot check locally. Generate `Dockerfile`, `docker-compose.
 
 # 07-vps-sqlite-saas
 
-Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Caddy, using the SQLite mini-prod stack — no separate DB / cache / queue server.
+Production-ready SaaS skeleton deployed to a single VPS via docker-compose + Caddy, using the SQLite mini-prod stack (no separate DB / cache / queue server).
 
 ## Stack
 
-| Layer | Choice |
-|---|---|
-| Framework | Django 6, split settings (`config/settings/{base,local,production,test}.py`) |
-| Database | SQLite (WAL + IMMEDIATE pragmas in prod), `/data/site.sqlite3` on a persistent volume |
-| Cache | Separate SQLite DB (`cache.sqlite3`) via `config.routers.CacheRouter` + `DatabaseCache` |
-| Custom user model | `users.User` (email as `USERNAME_FIELD`, no `username`) |
-| Auth | `django-allauth` (email login, mandatory verification in production) |
-| Auth hardening | `django-axes` (lockout) + `allauth.mfa` (TOTP + recovery codes) |
-| Background tasks | Django Tasks + `django-tasks-db` (database backend, no broker) — `jobs` app |
-| Static files | WhiteNoise (compressed, manifest-hashed in production) |
-| Media | Docker named volume, served by Caddy |
-| Email | Console backend in dev, SMTP (Postmark placeholder) in production |
-| Logging | `structlog` — pretty console in dev, JSON lines in prod, request-scoped `request_id` |
-| Health checks | `/healthz` (liveness), `/readyz` (DB reachable) |
-| Security | Django's HSTS / secure-cookie / SSL-redirect settings + `django-csp` |
-| Error tracking | Sentry SaaS (`SENTRY_DSN` env var) |
-| Lint/format | Ruff. **Types**: pyright + django-stubs. **Tests**: pytest + pytest-django. **Pre-commit**: yes |
-| Task runner | mise (`mise.toml`) |
-| CI | GitHub Actions (`ruff`, `pyright`, `manage.py check --deploy`, `pytest`) |
-| Backups | Litestream — streams every WAL frame (site + cache DBs) to S3-compatible storage |
-| Deploy | VPS via Docker + Caddy — multi-stage `Dockerfile` (`uv` builder → `python:3.13-slim-trixie` runtime) with Litestream baked in |
+- Django 6, split settings (`config/settings/{base,local,production,test}.py`)
+- SQLite (default DB + separate `cache.sqlite3` cache DB, WAL pragmas in production)
+- Custom user model (`users.User`, email login, no username field)
+- Auth: `django-allauth` (email login, mandatory verification in production) + `django-axes` (lockout) + `allauth.mfa` (TOTP 2FA)
+- Background tasks: Django Tasks with the database backend (`django-tasks-db`) — sample task in `jobs/tasks.py`
+- Email: SMTP in production (Postmark placeholder), console backend in local
+- Static: WhiteNoise; media: local volume (Caddy-served on the VPS)
+- Structured logging: `structlog` + `django-structlog` (JSON in prod, pretty console in dev, request-scoped `request_id`)
+- Ruff (lint + format), pytest + pytest-django, pyright + django-stubs, pre-commit
+- Security hardening (HSTS, secure cookies, SSL redirect) + CSP (`django-csp`)
+- Error reporting: Sentry (`sentry-sdk`)
+- CI: GitHub Actions (`.github/workflows/test.yml`)
+- Deploy: VPS via Docker + Caddy, SQLite backups via Litestream → S3-compatible storage
+- Task runner: `mise`
 
-## Local development
-
-Install [mise](https://mise.jdx.dev) (or run the underlying `uv run manage.py …` commands directly — see the fallback below).
+## Commands
 
 ```sh
-cp .env.example .env   # then set a real DJANGO_SECRET_KEY
-
-mise trust && mise install
-mise run install
-mise run migrate
-uv run manage.py createcachetable --database cache
-mise run superuser
-mise run dev
+mise trust && mise install     # first-time setup
+mise run install                # uv sync
+mise run dev                    # runserver
+mise run migrate                # migrate
+mise run makemigrations
+mise run shell
+mise run superuser              # createsuperuser
+mise run test                   # pytest
+mise run lint                   # ruff check
+mise run fmt                    # ruff format
+mise run typecheck              # pyright
+mise run collectstatic
+mise run worker                 # python manage.py db_worker
 ```
 
-Open <http://127.0.0.1:8000/admin/> and sign in with the new superuser.
+Fallback without mise: `uv run manage.py <command>`.
 
-| Task | Command |
-| --- | --- |
-| `mise run install` | `uv sync` |
-| `mise run dev` | `uv run manage.py runserver` |
-| `mise run migrate` | `uv run manage.py migrate` |
-| `mise run makemigrations` | `uv run manage.py makemigrations` |
-| `mise run shell` | `uv run manage.py shell` |
-| `mise run superuser` | `uv run manage.py createsuperuser` |
-| `mise run test` | `uv run pytest` |
-| `mise run lint` | `uv run ruff check .` |
-| `mise run fmt` | `uv run ruff format .` |
-| `mise run typecheck` | `uv run pyright` |
-| `mise run collectstatic` | `uv run manage.py collectstatic --noinput` |
-| `mise run worker` | `uv run manage.py db_worker` |
-| `mise run deploy` | see [Deploy](#deploy) |
-
-No mise? Every task's command above runs directly with `uv run …`.
-
-## Background tasks
-
-Add tasks to `jobs/tasks.py`:
-
-```python
-from django_tasks import task
-
-@task()
-def my_task(arg: str) -> None:
-    ...
-```
-
-Enqueue from anywhere:
-
-```python
-from jobs.tasks import my_task
-my_task.enqueue("hello")
-```
-
-Run the worker locally alongside `runserver`:
-
-```sh
-mise run worker    # uv run manage.py db_worker
-```
+`cp .env.example .env` before the first run, then set a real `DJANGO_SECRET_KEY`.
 
 ## Deploy
-
-VPS with Docker + Caddy. The image bakes in Litestream — `entrypoint.sh` restores `site.sqlite3` / `cache.sqlite3` from the S3 replica on boot (a no-op on the very first deploy), runs migrations and `createcachetable`, then execs gunicorn under `litestream replicate` so every WAL frame streams out continuously. There is no separate `db` service — SQLite lives on the `data` named volume shared between `web` and `worker`.
 
 ```sh
 ssh user@vps
@@ -145,18 +99,17 @@ git pull
 # --env-file is required on every compose call — compose auto-loads only ./.env, not deploy/.env.prod
 docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml pull
 docker compose --env-file deploy/.env.prod -f deploy/docker-compose.prod.yml up -d
+docker image prune -f   # old :latest layers otherwise accumulate until the disk fills
 ```
 
-No separate one-shot `migrate` step before `up -d` — unlike the Postgres VPS pattern, `entrypoint.sh` runs `migrate --noinput` on every container boot after the Litestream restore.
+No separate migrate step — `entrypoint.sh` restores the SQLite DB from the Litestream S3 replica (if present), runs `migrate --noinput` and `createcachetable`, then execs `litestream replicate` wrapping `gunicorn` on every container boot.
 
-Copy `.env.example` to `deploy/.env.prod` on the VPS and fill in real values — `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `DJANGO_BEHIND_PROXY=True`, a real `EMAIL_URL` (Postmark SMTP), `SENTRY_DSN`, and the Litestream `S3_*` vars. Also set `DATABASE_URL=sqlite:////data/site.sqlite3` and `CACHE_DB_PATH=/data/cache.sqlite3` so the app writes to the persistent volume instead of the image's build-time paths. Replace `example.com` in `deploy/Caddyfile` with the real domain before the first deploy.
+`mise run deploy` wraps the `up -d` step above. `collectstatic` runs at image build time (see `Dockerfile`), not on the VPS.
 
-`django-dbbackup` is intentionally not used — Litestream replicates every SQLite WAL frame to S3-compatible storage (R2, B2, Hetzner Object Storage, AWS S3) instead, which is finer-grained than periodic snapshots for a single-writer SQLite deploy.
+## SQLite + Litestream
 
-## Environment variables
+- `DATABASE_URL=sqlite:////data/site.sqlite3` and `CACHE_DB_PATH=/data/cache.sqlite3` — both live on the `data` named volume.
+- Litestream continuously replicates the WAL to S3-compatible storage (`S3_ENDPOINT` / `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` in `deploy/.env.prod`).
+- Single host only — no horizontal scaling. Deploys briefly stop writes during container swap.
 
-See `.env.example` for the full list.
-
----
-
-Built with [Seedkit](https://github.com/RobustaRush/seedkit).
+Built with [Seedkit](https://github.com/viewflow/seedkit).

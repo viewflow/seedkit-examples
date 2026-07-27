@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+
+{% block content %}
+  <h1 style="font-size:20px; margin:0 0 16px;">Test email</h1>
+  <p>This is a test message sent by <code>manage.py send_test_email</code> to confirm outbound
+  mail is wired up correctly and captured by Mailpit.</p>
+  <p style="color:#6b7280;">If you can read this in the Mailpit UI at
+  <a href="http://localhost:8025">localhost:8025</a>, delivery is working.</p>
+{% endblock %}

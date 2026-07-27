@@ -1,4 +1,4 @@
-name: 08-fly-app   # matches pyproject.toml [project].name; isolates volumes/networks per project
+name: 08-fly-app
 
 services:
   db:
@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
-      - "127.0.0.1:15432:5432"   # host Django reaches it via localhost (non-default: 5432 taken by a native postgres on this host)
+      - "127.0.0.1:5433:5432"   # host Django reaches it via localhost (5432 taken by a host-level Postgres)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:8-alpine
     ports:
-      - "127.0.0.1:16379:6379"   # host Django / workers reach it via localhost (non-default: 6379 taken by a native redis on this host)
+      - "127.0.0.1:6380:6379"   # host Django / workers reach it via localhost (6379 taken by a host-level Redis)
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -32,11 +32,10 @@ services:
       MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID}
       MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY}
     ports:
-      - "127.0.0.1:19000:9000"   # S3 API — loopback only; production uses real S3 (non-default: 9000 taken by another project's container on this host)
-      - "127.0.0.1:19001:9001"   # web console
+      - "127.0.0.1:9002:9000"   # S3 API — loopback only; production uses real S3 (9000 taken by another local container)
+      - "127.0.0.1:9003:9001"   # web console
     command: server /data --console-address ":9001"
     healthcheck:
-      # `wget` isn't in minio/minio:latest — use curl, which is.
       test: ["CMD", "curl", "-sf", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 3s

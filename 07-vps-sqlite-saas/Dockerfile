@@ -15,9 +15,6 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-# DJANGO_DEBUG=True unlocks dev defaults so collectstatic boots without
-# real SECRET_KEY / DATABASE_URL. SETTINGS_MODULE → production so STORAGES
-# (manifest static storage) applies; otherwise manage.py uses local.py.
 RUN DJANGO_SETTINGS_MODULE=config.settings.production DJANGO_DEBUG=True \
     /opt/venv/bin/python manage.py collectstatic --noinput
 
@@ -32,21 +29,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget \
  && dpkg -i "litestream-0.5.13-linux-${ARCH}.deb" \
  && rm "litestream-0.5.13-linux-${ARCH}.deb" \
  && rm -rf /var/lib/apt/lists/*
-# Release assets name amd64 as x86_64 while arm64 keeps dpkg's name — the sed
-# keeps the image building on M-series Macs too.
 
 RUN groupadd --system django && useradd --system --gid django django
-
-# Pre-create /data before `USER django` — the named volume mounts as root:root,
-# so the django user can't write site.sqlite3 / cache.sqlite3 / WAL files otherwise.
-RUN mkdir -p /data && chown django:django /data
-
-# Pre-create /app/media for the same reason (media volume, WhiteNoise storage).
-RUN mkdir -p /app/media && chown django:django /app/media
 
 WORKDIR /app
 COPY --from=builder --chown=django:django /opt/venv /opt/venv
 COPY --from=builder --chown=django:django /app /app
+
+# Pre-create /data and /app/media before `USER django` — named volumes mount
+# as root:root on first creation, so the django user can't write
+# site.sqlite3 / cache.sqlite3 / WAL files or uploads otherwise.
+RUN mkdir -p /data /app/media && chown django:django /data /app/media
+
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA}
 
 # Bake the litestream config and entrypoint into the image at fixed paths.
 # Bind-mounting `./litestream.yml` from `deploy/docker-compose.prod.yml` resolves

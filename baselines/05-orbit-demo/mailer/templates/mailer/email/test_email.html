@@ -1,8 +1,0 @@
-{% extends "mailer/email/base.html" %}
-
-{% block subject %}Test email from {{ site_name|default:"05 Orbit Demo" }}{% endblock %}
-
-{% block content %}
-<p>This is a test email sent by the <code>send_test_email</code> management command.</p>
-<p>If you can read this, outbound mail is flowing correctly and should be visible in the Orbit dashboard's Mail tab.</p>
-{% endblock %}

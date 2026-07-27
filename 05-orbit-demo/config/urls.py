@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
 from django.views.generic import RedirectView
 
 from config.views import liveness, readiness
@@ -30,4 +30,6 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
+    from django.urls import include
+
     urlpatterns += [path("orbit/", include("orbit.urls"))]

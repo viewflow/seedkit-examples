@@ -1,17 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# uv / venv
 .venv/
-.env
+uv.lock.bak
+
+# Django
 *.sqlite3
 staticfiles/
 media/
+
+# Env
+.env
+deploy/.env.prod
+
+# Tooling
 .ruff_cache/
 .pytest_cache/
 .coverage
 htmlcov/
 
-__pycache__/
-*.py[cod]
-*.egg-info/
-
-.DS_Store
-.idea/
+# Editors / OS
 .vscode/
+.idea/
+.DS_Store

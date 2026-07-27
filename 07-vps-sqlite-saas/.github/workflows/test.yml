@@ -2,7 +2,9 @@ name: test
 
 on:
   push:
+    branches: [main]   # bare `push:` + `pull_request:` double-runs every PR commit
   pull_request:
+  workflow_call:       # lets deploy.yml run this workflow as its test gate
 
 jobs:
   test:
@@ -10,9 +12,8 @@ jobs:
 
     env:
       DATABASE_URL: sqlite:////tmp/ci.sqlite3
-      CACHE_DB_PATH: /tmp/ci-cache.sqlite3
-      # 50+ chars, 5+ unique, no "django-insecure-" prefix — any of those
-      # trips security.W009 at the `check --deploy --fail-level WARNING` step below.
+      # 50+ chars, 5+ unique, no `django-insecure-` prefix — a short key or
+      # that prefix trips security.W009 at the `check --deploy` step below.
       DJANGO_SECRET_KEY: ci-placeholder-secret-key-not-a-real-secret-0123456789-abcxyz
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
@@ -25,8 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # setup-uv releases are immutable — no moving major tag. Pin the
-      # latest release from github.com/astral-sh/setup-uv/releases.
+      # Pin the latest release from github.com/astral-sh/setup-uv/releases.
       - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
@@ -35,12 +35,16 @@ jobs:
 
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run pyright
 
       # Catches security-setting regressions (SSL_REDIRECT without proxy,
       # missing HSTS, etc.) at CI time instead of first-deploy.
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
+
+      # Fails when a model change landed without its migration.
+      - run: uv run manage.py makemigrations --check --dry-run
+
+      - run: uv run pyright
 
       - run: uv run pytest

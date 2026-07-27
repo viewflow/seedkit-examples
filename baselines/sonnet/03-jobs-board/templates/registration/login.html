@@ -1,0 +1,16 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="utf-8">
+    <title>{% trans "Log in" %}</title>
+</head>
+<body>
+    <h1>{% trans "Log in" %}</h1>
+    <p>{% trans "Enter your email address and we'll send you a login link." %}</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">{% trans "Send login link" %}</button>
+    </form>
+</body>
+</html>

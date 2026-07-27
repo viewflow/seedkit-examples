@@ -17,17 +17,21 @@ Including another URLconf
 
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import path
 from django.views.generic import RedirectView
 
 from config.views import liveness, readiness
+from jobs.views import profile_demo
 
 urlpatterns = [
     path("", RedirectView.as_view(url="/admin/", permanent=False)),
     path("admin/", admin.site.urls),
     path("healthz", liveness, name="healthz"),
     path("readyz", readiness, name="readyz"),
+    path("jobs/profile-demo/", profile_demo, name="profile-demo"),
 ]
 
 if settings.DEBUG:
+    from django.urls import include
+
     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]

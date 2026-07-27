@@ -1,8 +1,5 @@
 from .base import *
 
-# Security
-# https://docs.djangoproject.com/en/stable/topics/security/
-
 # HTTPS — env-toggle so smoke / staging / direct-gunicorn access can run
 # without TLS. Hardcoding True returns 301 on every plain-HTTP probe.
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
@@ -12,7 +9,7 @@ SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
 # X-Forwarded-Proto trust. ONLY enable when there's a TLS-terminating proxy
-# (Caddy in front of gunicorn). Without one, any client on the open port
+# (Caddy) in front of gunicorn. Without one, any client on the open port
 # can spoof X-Forwarded-Proto: https and Django will treat the request as
 # secure — bypassing SECURE_SSL_REDIRECT and CSRF cookie protections.
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
@@ -42,17 +39,18 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 
 # Content Security Policy — django-csp
-# https://django-csp.readthedocs.io/
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
-# ANALYTICS_HOST comes from `from .base import *` — Umami is self-hosted and env-driven.
 _UMAMI = (ANALYTICS_HOST,) if ANALYTICS_HOST else ()
 
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
         "script-src": ("'self'", *_UMAMI),
-        "style-src": ("'self'", "'unsafe-inline'"),  # tighten once styles are externalized
+        "style-src": (
+            "'self'",
+            "'unsafe-inline'",
+        ),  # tighten by removing unsafe-inline once styles are externalized
         "img-src": ("'self'", "data:"),
         "font-src": ("'self'",),
         "connect-src": ("'self'", *_UMAMI),
@@ -63,8 +61,7 @@ CONTENT_SECURITY_POLICY = {
 }
 
 
-# Error reporting — Bugsink (self-hosted, Sentry-protocol)
-# https://www.bugsink.com/docs/
+# Error reporting — Bugsink (self-hosted, Sentry protocol)
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
@@ -87,17 +84,19 @@ if SENTRY_DSN:
 
 
 # Database backups — django-dbbackup
-# Wrapped in `if not DEBUG` — the Dockerfile build runs collectstatic with
-# DJANGO_DEBUG=True, and dbbackup in INSTALLED_APPS unconditionally would
-# evaluate env("AWS_ACCESS_KEY_ID") (no default) and crash the build.
+# Wrapped in `if not DEBUG:` — the Dockerfile build runs collectstatic with
+# DJANGO_DEBUG=True, and an unconditional INSTALLED_APPS += ["dbbackup"]
+# would evaluate the AWS env() calls (no default) at build time and crash.
 if not DEBUG:
-    INSTALLED_APPS = [*INSTALLED_APPS, "dbbackup"]
+    INSTALLED_APPS += ["dbbackup"]
 
     DBBACKUP_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
     DBBACKUP_STORAGE_OPTIONS = {
         "access_key": env("AWS_ACCESS_KEY_ID"),
         "secret_key": env("AWS_SECRET_ACCESS_KEY"),
-        "bucket_name": env("DBBACKUP_BUCKET"),  # SEPARATE bucket from media — different lifecycle
+        "bucket_name": env(
+            "DBBACKUP_BUCKET"
+        ),  # SEPARATE bucket from media — different lifecycle policy
         "default_acl": "private",
     }
 

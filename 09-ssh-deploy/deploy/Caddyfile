@@ -1,6 +1,10 @@
 example.com {     # replace with the real domain — Caddy fails to issue TLS for example.com
+    encode zstd gzip          # Caddy doesn't compress by default; static/ is served by the web app
+    request_body {
+        max_size 10MB         # Caddy's default is unlimited — raise per project if uploads need more
+    }
     reverse_proxy web:8000 {
-        # Probe `/healthz` (process up) — NOT `/readyz` (DB+deps).
+        # Probe /healthz (process up) — NOT /readyz (DB+deps).
         # A transient DB blip on /readyz flips the upstream to "down" and
         # Caddy stops serving 200s; better to let /readyz feed monitoring
         # while the load-balancer probe stays liveness-only.
@@ -10,6 +14,10 @@ example.com {     # replace with the real domain — Caddy fails to issue TLS fo
     }
 }
 
-bugsink.example.com {     # replace with the real Bugsink subdomain
+bugsink.example.com {     # replace with the real subdomain
     reverse_proxy bugsink:8000
+}
+
+stats.example.com {     # replace with the real subdomain — Umami
+    reverse_proxy umami:3000
 }

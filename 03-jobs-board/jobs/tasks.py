@@ -6,10 +6,12 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task
-def send_job_notification(job_id):
-    logger.info("Notifying subscribers about job %s", job_id)
+def add(x, y):
+    return x + y
 
 
 @shared_task
-def send_daily_digest():
-    logger.info("Sending daily job digest")
+def ping():
+    """Beat-scheduled — proves Celery Beat + autodiscovery both work end to end."""
+    logger.info("pong")
+    return "pong"

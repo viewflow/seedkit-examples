@@ -1,0 +1,57 @@
+[project]
+name = "07-vps-sqlite-saas"
+version = "0.1.0"
+description = "Production-ready SaaS skeleton for a single VPS: docker-compose + Caddy + SQLite mini-prod stack."
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<5.2",
+    "django-environ>=0.11",
+    "django-allauth[mfa]>=65.0",
+    "django-axes>=7.0",
+    "django-tasks>=0.7",
+    "django-csp>=3.8",
+    "whitenoise>=6.7",
+    "gunicorn>=23.0",
+    "structlog>=24.4",
+    "django-structlog>=8.1",
+    "sentry-sdk>=2.13",
+    "django-tasks-db>=0.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "pyright>=1.1",
+    "django-stubs[compatible-mypy]>=5.1",
+    "pre-commit>=3.8",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["config", "users", "jobs"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+addopts = "--reuse-db"
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["config", "users", "jobs"]
+exclude = ["**/migrations", ".venv"]
+venvPath = "."
+venv = ".venv"
+reportMissingImports = true
+useLibraryCodeForTypes = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"

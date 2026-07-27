@@ -1,14 +1,24 @@
+# The default json-file log driver grows without bound — cap it once here
+# and attach to every service, or the VPS disk fills in a few months.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   web:
     image: ghcr.io/{owner}/07-vps-sqlite-saas:latest
     restart: unless-stopped
-    env_file: .env.prod
     volumes:
       - data:/data
       - media:/app/media
+    env_file: .env.prod
+    logging: *logging
     healthcheck:
       # python+urllib instead of curl — the prod image only installs
-      # litestream and slim has no curl.
+      # litestream and slim has no curl. DJANGO_ALLOWED_HOSTS must
+      # include localhost (see deploy/.env.prod.example) or this probe 400s.
       test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/healthz\",timeout=2).status==200 else 1)'"]
       interval: 10s
       timeout: 3s
@@ -18,13 +28,12 @@ services:
   worker:
     image: ghcr.io/{owner}/07-vps-sqlite-saas:latest
     restart: unless-stopped
-    command: python manage.py db_worker
-    env_file: .env.prod
     volumes:
       - data:/data
-    # Wait for `web` (not a `db` service — there is none, SQLite lives on the
-    # shared `data` volume) so litestream's restore + migrate has already run
-    # before the worker opens the same DB file.
+      - media:/app/media
+    env_file: .env.prod
+    command: ["python", "manage.py", "db_worker"]
+    logging: *logging
     depends_on:
       web:
         condition: service_healthy
@@ -40,6 +49,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    logging: *logging
     depends_on:
       - web
 

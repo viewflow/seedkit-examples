@@ -2,24 +2,23 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+.venv/
 
 # Django
 *.sqlite3
 staticfiles/
 media/
 
-# Environment
-.venv/
+# Env
 .env
 
 # Tooling
 .ruff_cache/
 .pytest_cache/
+.coverage
+htmlcov/
 
-# Editors
+# Editor
 .vscode/
 .idea/
-*.swp
-
-# OS
 .DS_Store

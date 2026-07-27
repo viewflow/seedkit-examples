@@ -1,11 +1,21 @@
+# The default json-file log driver grows without bound — cap it once here
+# and attach to every service, or the VPS disk fills in a few months.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   web:
-    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    image: ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file: .env.prod
+    logging: *logging
     healthcheck:
       # python+urllib instead of curl — the prod image only installs
-      # postgresql-client and slim has no curl.
+      # postgresql-client and slim has no curl. DJANGO_ALLOWED_HOSTS must
+      # include localhost (see deploy/.env.prod.example) or this probe 400s.
       test: ["CMD-SHELL", "python -c 'import urllib.request,sys; sys.exit(0 if urllib.request.urlopen(\"http://localhost:8000/healthz\",timeout=2).status==200 else 1)'"]
       interval: 10s
       timeout: 3s
@@ -18,10 +28,11 @@ services:
         condition: service_healthy
 
   worker:
-    image: ghcr.io/${GITHUB_REPOSITORY}:latest
+    image: ghcr.io/${GITHUB_REPOSITORY}:${IMAGE_TAG:-latest}
     restart: unless-stopped
     command: python manage.py rqworker default
     env_file: .env.prod
+    logging: *logging
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +46,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    logging: *logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -44,22 +56,15 @@ services:
   redis:
     image: redis:8-alpine
     restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy volatile-lru
+    logging: *logging
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  bugsink:
-    image: bugsink/bugsink:latest
-    restart: unless-stopped
-    environment:
-      SECRET_KEY: ${BUGSINK_SECRET_KEY}
-      CREATE_SUPERUSER: "admin:${BUGSINK_ADMIN_PASSWORD}"
-      BEHIND_HTTPS_PROXY: "true"
-      BASE_URL: https://bugsink.example.com
-    volumes:
-      - bugsink_data:/data
 
   caddy:
     image: caddy:2-alpine
@@ -71,12 +76,48 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy_data:/data
       - caddy_config:/config
+    logging: *logging
     depends_on:
       - web
-      - bugsink
+
+  bugsink:
+    image: bugsink/bugsink:latest
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${BUGSINK_SECRET_KEY}
+      CREATE_SUPERUSER: "admin:${BUGSINK_ADMIN_PASSWORD}"
+      BEHIND_HTTPS_PROXY: "true"
+      BASE_URL: https://bugsink.example.com
+    volumes:
+      - bugsink_data:/data
+    logging: *logging
+
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://umami:${UMAMI_DB_PASSWORD}@umami-db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET}
+    logging: *logging
+    depends_on:
+      - umami-db
+
+  umami-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD}
+    volumes:
+      - umami_pgdata:/var/lib/postgresql/data
+    logging: *logging
 
 volumes:
   pgdata:
-  bugsink_data:
+  redis_data:
   caddy_data:
   caddy_config:
+  bugsink_data:
+  umami_pgdata:

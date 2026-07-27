@@ -1,0 +1,8 @@
+{
+  "include": ["config", "api", "jobs", "manage.py"],
+  "exclude": ["**/migrations", ".venv"],
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic"
+}

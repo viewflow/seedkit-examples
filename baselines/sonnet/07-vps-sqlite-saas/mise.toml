@@ -1,0 +1,38 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[tasks.setup]
+description = "Install dependencies and pre-commit hooks"
+run = """
+uv sync
+uv run pre-commit install
+"""
+
+[tasks.dev]
+description = "Run the local dev server"
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run manage.py migrate"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint with ruff"
+run = "uv run ruff check ."
+
+[tasks.format]
+description = "Format with ruff"
+run = "uv run ruff format ."
+
+[tasks.typecheck]
+description = "Type check with pyright"
+run = "uv run pyright"
+
+[tasks.check]
+description = "Run lint, typecheck and tests"
+depends = ["lint", "typecheck", "test"]

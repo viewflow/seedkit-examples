@@ -1,9 +1,7 @@
 # syntax=docker/dockerfile:1
-
-# django-bolt ships no manylinux wheel for linux/aarch64 — pin the build to
-# linux/amd64 (via emulation on Apple Silicon hosts) so uv installs the
-# published manylinux2014_x86_64 wheel instead of compiling the Rust
-# extension from source at build time.
+# Pinned to linux/amd64: django-bolt ships a precompiled Rust extension and
+# Fly's default machines are amd64 — building natively on an Apple Silicon
+# host would otherwise produce a builder/runtime arch mismatch.
 FROM --platform=linux/amd64 ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
 ENV UV_COMPILE_BYTECODE=1 \
@@ -20,13 +18,16 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-# collectstatic runs at deploy time, not build time — this project uses S3
-# storage, and collectstatic needs real bucket creds that must not enter
-# the build context. See fly.toml's release_command.
+# collectstatic is NOT run at build time — storage is S3 (MinIO/real S3),
+# and collectstatic needs real bucket creds at deploy time, not build time.
+# See fly.toml's release_command.
 
 
 FROM --platform=linux/amd64 python:3.12-slim-bookworm AS prod
 ENV PATH="/opt/venv/bin:$PATH"
+
+ARG GIT_SHA=unknown
+ENV SENTRY_RELEASE=${GIT_SHA}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
@@ -40,4 +41,4 @@ COPY --from=builder --chown=django:django /app /app
 
 USER django
 
-CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000"]
+CMD ["gunicorn", "config.wsgi", "--bind", "0.0.0.0:8000", "--max-requests", "1000", "--max-requests-jitter", "100", "--access-logfile", "-"]

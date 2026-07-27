@@ -1,8 +1,11 @@
 name: test
 
 on:
-  push:
+  # No `push: branches: [main]` here — deploy.yml already runs this workflow
+  # via `workflow_call` on every main push. Adding both would double every
+  # CI run on main.
   pull_request:
+  workflow_call:       # lets deploy.yml run this workflow as its test gate
 
 jobs:
   test:
@@ -32,21 +35,20 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-      # 50+ chars, 5+ unique, no "django-insecure-" prefix — Django's
-      # security.W009 check flags that prefix regardless of length.
-      DJANGO_SECRET_KEY: ci-placeholder-not-a-real-secret-key-0123456789abcdefghij
+      # 50+ chars, 5+ unique, no `django-insecure-` prefix — a short key or
+      # that prefix trips security.W009 at the `check --deploy` step below.
+      DJANGO_SECRET_KEY: ci-placeholder-secret-key-not-a-real-secret-0123456789-abcxyz
       DJANGO_DEBUG: "False"
       DJANGO_ALLOWED_HOSTS: "*"
-      DJANGO_CSRF_TRUSTED_ORIGINS: https://example.com
       REDIS_URL: redis://localhost:6379
       AWS_ACCESS_KEY_ID: ci-placeholder
       AWS_SECRET_ACCESS_KEY: ci-placeholder
       DBBACKUP_BUCKET: ci-placeholder
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
-      - uses: astral-sh/setup-uv@v8.2.0
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
@@ -60,5 +62,8 @@ jobs:
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
+
+      # Fails when a model change landed without its migration.
+      - run: uv run manage.py makemigrations --check --dry-run
 
       - run: uv run pytest

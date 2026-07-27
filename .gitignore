@@ -27,3 +27,6 @@ logs/
 
 # Local env files. Each project ships .env.example; .env is per-developer.
 **/.env
+
+# Harness lock — one run per workspace (train/agents.sh).
+.harness-lock/

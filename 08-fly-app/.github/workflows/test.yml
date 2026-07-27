@@ -2,7 +2,9 @@ name: test
 
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_call:
 
 jobs:
   test:
@@ -50,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v8.3.0
+      - uses: astral-sh/setup-uv@v8.2.0
         with:
           enable-cache: true
 
@@ -66,5 +68,11 @@ jobs:
       - run: uv run manage.py check --deploy --fail-level WARNING
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
+
+      # Fails when a model change landed without its migration. Scoped to
+      # project-owned apps: mailauth_user's shipped migration predates our
+      # DEFAULT_AUTO_FIELD=BigAutoField, so an unscoped check always flags
+      # a phantom id-field diff on that vendored app.
+      - run: uv run manage.py makemigrations --check --dry-run api
 
       - run: uv run pytest

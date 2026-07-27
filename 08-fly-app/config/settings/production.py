@@ -1,19 +1,21 @@
 from .base import *
 
+# axes writes one DB row per failed attempt; the cache handler keeps the hot
+# path in Redis. See CACHES wiring in base.py.
+AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
+
+
+# Security
 # HTTPS — env-toggle so smoke / staging / direct-gunicorn access can run
 # without TLS. Hardcoding True returns 301 on every plain-HTTP probe.
 SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
-# Exempt healthcheck endpoints — managed-platform internal probes (Fly,
-# Railway, k8s) hit the container directly without traversing the TLS
-# proxy, so they arrive as plain HTTP and would be 301-redirected,
-# making the probe never see 200.
+# Exempt healthcheck endpoints — Fly's internal probes hit the container
+# directly without traversing the TLS proxy, so they arrive as plain HTTP
+# and would be 301-redirected, making the probe never see 200.
 SECURE_REDIRECT_EXEMPT = [r"^healthz$", r"^readyz$"]
 
 # X-Forwarded-Proto trust. ONLY enable when there's a TLS-terminating proxy
-# (Caddy / nginx / managed load balancer) in front of gunicorn. Without one,
-# any client on the open port can spoof X-Forwarded-Proto: https and Django
-# will treat the request as secure — bypassing SECURE_SSL_REDIRECT and
-# CSRF cookie protections.
+# in front of gunicorn (Fly's edge, here).
 if env.bool("DJANGO_BEHIND_PROXY", default=False):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
@@ -40,7 +42,8 @@ SECURE_CONTENT_TYPE_NOSNIFF = True  # Django default but worth being explicit
 # checking failed".
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
-# django-csp — layered on top of the settings above.
+
+# Content Security Policy — django-csp
 MIDDLEWARE = [*MIDDLEWARE, "csp.middleware.CSPMiddleware"]
 
 CONTENT_SECURITY_POLICY = {
@@ -51,10 +54,7 @@ CONTENT_SECURITY_POLICY = {
             "https://www.googletagmanager.com",
             "https://www.google-analytics.com",
         ),
-        "style-src": (
-            "'self'",
-            "'unsafe-inline'",
-        ),  # tighten by removing unsafe-inline once styles are externalized
+        "style-src": ("'self'", "'unsafe-inline'"),  # tighten once styles are externalized
         "img-src": (
             "'self'",
             "data:",
@@ -73,7 +73,8 @@ CONTENT_SECURITY_POLICY = {
     },
 }
 
-# Error reporting — GlitchTip via sentry-sdk.
+
+# Error reporting — GlitchTip via sentry-sdk
 SENTRY_DSN = env("SENTRY_DSN", default="")
 if SENTRY_DSN:
     import sentry_sdk
@@ -94,13 +95,10 @@ if SENTRY_DSN:
         before_send=_scrub,
     )
 
-# django-axes — cache handler backed by Redis for the hot path.
-AXES_HANDLER = "axes.handlers.cache.AxesCacheHandler"
-
-# django-anymail — provider API in prod; consolemail in dev.
-EMAIL_BACKEND = "anymail.backends.postmark.EmailBackend"
-
-# Static + media to S3 when a bucket is configured.
+# Guard with AWS_STORAGE_BUCKET_NAME so ASGI/dev-loaded production.py runs
+# still boot via the base.py FileSystemStorage fallback when the bucket env
+# is empty — without the guard boto3 raises ParamValidationError on every
+# admin asset request.
 if AWS_STORAGE_BUCKET_NAME:
     STORAGES = {
         **STORAGES,

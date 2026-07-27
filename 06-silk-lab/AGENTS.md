@@ -1,54 +1,67 @@
 # 06-silk-lab
 
-- Settings layout: split (`config/settings/{base,local,production,test}.py`).
-- Database: PostgreSQL, host Postgres (not Docker). Dev DB name `silk_db`.
-- Request handling: WSGI.
-- Custom user model: none. Auth: none.
-- Cache: Django's default (`LocMemCache`).
-- Background tasks: Django Tasks (`django.tasks` API surface) backed by `django-tasks-db` (`TASKS["default"]["BACKEND"] = "django_tasks_db.DatabaseBackend"`). The installed `django-tasks-db` 0.12.0 still targets the standalone `django-tasks` backport package rather than Django 6's built-in `django.tasks` module — use `from django_tasks import task`, not `from django.tasks import task`. `jobs` app: `apps.py::ready()` imports `tasks` to register them; `jobs/tasks.py` has a sample `send_welcome_email` task. Run the worker with `manage.py db_worker`.
-- Debug toolbar: `django-silk` at `/silk/`, DEBUG-gated in `config/settings/local.py`.
-- Database safety (all DEBUG-gated in `local.py`): `django-zeal` (N+1 detection, `ZEAL_RAISE_ON_VIOLATION = True`), `django-migration-linter` (`manage.py lintmigrations`, exclusions in `setup.cfg`), `django-test-migrations` (`migrator` pytest fixture, no wiring needed beyond the dependency).
-- `django-extensions`: yes, `local.py` only.
-- Email: console backend in dev (`EMAIL_URL=consolemail://`), gated fail-fast in production via `env.NOTSET`. No HTML email base template.
-- Analytics: GoatCounter, `ANALYTICS_ID` / `ANALYTICS_HOST` via `config/context_processors.py::analytics`, snippet in `templates/_analytics.html`, gated on `not DEBUG`.
-- Health checks: `config/views.py::liveness` (`/healthz`) and `::readiness` (`/readyz`, checks DB).
-- Lint: Ruff (`pyproject.toml`). Tests: pytest + pytest-django (`DJANGO_SETTINGS_MODULE=config.settings.test`). No type checking, no pre-commit hooks, no i18n, no CI, no production deploy target (skipped by request).
-- Task runner: none — use `uv run manage.py …` directly.
+Django 6 project. Profile a few request paths with django-silk and run a simple background email task on the DB backend.
+
+## Stack decisions
+
+- Settings layout: split (`config/settings/base.py`, `local.py`, `production.py`, `test.py`)
+- Database: PostgreSQL, host-installed (`DATABASE_URL` in `.env`)
+- Request handling: WSGI
+- Custom user model: no
+- Auth: none
+- Lint: Ruff
+- Test runner: pytest (`config.settings.test`)
+- Type checking: no
+- Pre-commit hooks: no
+- i18n: no
+- Structured logging: no
+- Task runner (mise/just/make): none — use `uv run manage.py ...` directly
+- Debug toolbar: django-silk (`/silk/`), dev-only, DEBUG-gated in `local.py`
+- Background tasks: Django Tasks, Database backend (`django-tasks-db`) — `jobs` app, worker via `manage.py db_worker`
+- Analytics: GoatCounter, env-driven (`ANALYTICS_ID` / `ANALYTICS_HOST`)
+- Email: console backend in dev (`EMAIL_URL=consolemail://`)
+- HTML email base template: no
+- CORS: no
+- REST API: none
+- Frontend: none (minimal `templates/base.html` exists only so `_analytics.html` has somewhere to include)
+- Devcontainer: no
+- Health checks: `/healthz` (liveness), `/readyz` (DB readiness) in `config/views.py`
+- `robots.txt`: no
+- django-extensions: yes, dev-only, `local.py`
+- Database safety: django-zeal, django-migration-linter, django-test-migrations — all dev-only
+- Production setup (security settings, CSP, error reporting, GDPR, CI, deploy target, dbbackup): skipped
 
 ## Layout
 
 ```
-06-silk-lab/
-├── config/
-│   ├── settings/{base,local,production,test}.py
-│   ├── context_processors.py  # analytics
-│   ├── urls.py
-│   ├── views.py                # healthz, readyz
-│   ├── wsgi.py / asgi.py
-├── jobs/                       # django-tasks-db worker tasks
-│   ├── apps.py                 # ready() imports tasks
-│   └── tasks.py                # sample @task
-├── templates/
-│   ├── base.html
-│   └── _analytics.html
-├── manage.py
-├── pyproject.toml
-├── setup.cfg                   # django-migration-linter exclude_apps
-├── .env.example
-└── .env (gitignored)
+config/
+  settings/
+    base.py        # env-driven core settings, shared by all
+    local.py        # DEBUG-gated: silk, zeal, migration-linter, django-extensions
+    production.py    # deltas from base (currently none — production setup was skipped)
+    test.py          # fast test settings (locmem email/cache, immediate task backend)
+  urls.py           # /, /admin/, /healthz, /readyz, /jobs/profile-demo/, /silk/ (DEBUG only)
+  views.py          # liveness/readiness views
+  context_processors.py  # analytics context processor
+jobs/
+  apps.py           # ready() imports tasks.py to register @task functions
+  tasks.py          # send_welcome_email — sample Django Tasks task
+  views.py          # profile_demo — @silk_profile usage example
+templates/
+  base.html         # minimal base template (frontend=none)
+  _analytics.html   # GoatCounter snippet, gated on ANALYTICS_ID/ANALYTICS_HOST/DEBUG
+setup.cfg           # django-migration-linter exclude_apps
 ```
 
 ## Key commands
 
 ```sh
-cp .env.example .env
 createdb silk_db
-uv sync
 uv run manage.py migrate
-uv run manage.py createsuperuser
 uv run manage.py runserver
-uv run manage.py db_worker       # second terminal
-uv run pytest
-uv run ruff check .
+uv run manage.py db_worker        # second terminal
 uv run manage.py lintmigrations
+uv run ruff check .
+uv run ruff format .
+uv run pytest
 ```

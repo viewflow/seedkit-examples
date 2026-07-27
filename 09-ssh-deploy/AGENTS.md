@@ -1,71 +1,74 @@
-# 09-ssh-deploy
+# 09-ssh-deploy — agent context
+
+## Stack decisions
 
 - Settings layout: split (`config/settings/{base,local,production,test}.py`).
-- Database: PostgreSQL, Postgres-in-Docker for local dev (`docker-compose.yml`; remapped to host port 5435 — 5432 is taken by a native Postgres on this dev machine).
+- Database: PostgreSQL, Postgres-in-Docker for local dev (`docker-compose.yml`, `db` service).
 - Request handling: WSGI.
-- Custom user model: none.
-- Auth: none.
-- Cache: Redis (`django-redis`), `REDIS_URL` /0.
-- Background tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq` + `django-rq`, `REDIS_URL` /3). Tasks live in `jobs/tasks.py`, registered via `jobs/apps.py::ready()`.
-- Logging: `structlog` + `django-structlog` — pretty console in dev, JSON in prod, per-request `request_id` via `RequestMiddleware`.
-- Analytics: Umami (self-hosted), env-driven `ANALYTICS_ID` / `ANALYTICS_HOST`, wired through `config/context_processors.py` + `templates/_analytics.html`.
-- Email: none — no `EMAIL_BACKEND` override, test settings use the locmem backend.
-- Health checks: `/healthz` (liveness), `/readyz` (DB reachable) — `config/views.py`.
-- Security: Django's HSTS / secure-cookie / SSL-redirect settings + `django-csp` in `config/settings/production.py`.
-- Error reporting: Bugsink (self-hosted, Sentry-protocol) via `sentry-sdk`, PII scrubbing (`send_default_pii=False` + header scrub) for GDPR.
-- GDPR: `jobs/management/commands/{export_user_data,delete_user_data}.py` for user data requests.
-- Database backups: `django-dbbackup` → S3-compatible bucket (`DBBACKUP_BUCKET`), wrapped in `if not DEBUG` in `production.py`.
-- Lint: Ruff. Tests: pytest + pytest-django. No type checking. No pre-commit hooks. No i18n.
+- Custom user model: no — stock `django.contrib.auth.User`.
+- Lint: Ruff (`pyproject.toml` `[tool.ruff]`).
+- Tests: pytest + pytest-django (`pyproject.toml` `[tool.pytest.ini_options]`, settings module `config.settings.test`).
+- Type checking: none.
+- Pre-commit hooks: none.
+- i18n: none.
+- Auth add-on: none — stock Django auth, admin login only.
+- Structured logging: `structlog` + `django-structlog`, pretty console in dev / JSON in prod, request-scoped `request_id`.
 - Task runner: mise (`mise.toml`).
-- CI: GitHub Actions test workflow (`.github/workflows/test.yml`) — Postgres + Redis services, ruff, `manage.py check --deploy`, pytest.
-- Deploy: GitHub Actions over SSH (`.github/workflows/deploy.yml`) — builds + pushes a GHCR image, SSHes to the host to `pull && migrate && up -d`. Built on top of the VPS Docker + Caddy pattern (`deploy/docker-compose.prod.yml`, `deploy/Caddyfile`).
-- Production Dockerfile: multi-stage — `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` builder → `python:3.12-slim-bookworm` runtime. Installs `postgresql-client-17` from the PGDG apt repo (Bookworm's stock package is v15, which mismatches the `postgres:17` service).
+- Redis: `django-redis` cache backend, `/0`.
+- Background tasks: Django Tasks with the Redis Queue backend (`django-tasks-rq`), app `jobs`, worker command `rqworker default`, queue on Redis `/3`.
+- Analytics: Umami (self-hosted), env-driven `ANALYTICS_ID` / `ANALYTICS_HOST`.
+- Email: none — this project sends no transactional mail; Django's default backend is untouched, `test.py` still forces `locmem` for test isolation.
+- CORS: none. REST API: none. Frontend: none (minimal `templates/base.html` exists only so the analytics include resolves).
+- Health checks: yes — `/healthz` (liveness), `/readyz` (DB readiness), wired into the Caddy healthcheck and the container `HEALTHCHECK`.
+- `robots.txt`: none. `django-extensions`: none. Devcontainer: none.
+- Security: Django deploy security settings (`config/settings/production.py`) + CSP via `django-csp`.
+- Error reporting: Bugsink (self-hosted, Sentry protocol), PII scrubbed (`Authorization`/`Cookie` headers dropped, `send_default_pii=False`).
+- GDPR: user data export/delete management commands under `jobs/management/commands/`.
+- CI: GitHub Actions test workflow (`.github/workflows/test.yml`), Postgres + Redis services.
+- Deploy: GitHub Actions via SSH (`.github/workflows/deploy.yml`) — builds + pushes a GHCR image, then SSHes into the host to `docker compose pull && migrate && up -d`. Built on `deploy/docker-compose.prod.yml` + `deploy/Caddyfile` + `deploy/.env.prod.example`.
+- Database backups: `django-dbbackup` to S3-compatible storage (production only, wrapped in `if not DEBUG:`).
+- Production Dockerfile: multi-stage — `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` builder → `python:3.12-slim-bookworm` runtime. `postgresql-client-17` is installed via the PGDG apt repo (Bookworm's default repo only ships major 15, which doesn't match the `postgres:17` server).
 
 ## Layout
 
 ```
-09-ssh-deploy/
-├── config/
-│   ├── settings/{base,local,production,test}.py
-│   ├── context_processors.py   # analytics
-│   ├── urls.py
-│   ├── views.py                 # healthz, readyz
-│   ├── wsgi.py / asgi.py
-├── jobs/
-│   ├── apps.py                  # ready() imports tasks
-│   ├── tasks.py                 # sample @task
-│   ├── management/commands/{export_user_data,delete_user_data}.py
-├── templates/
-│   ├── base.html
-│   └── _analytics.html
-├── deploy/
-│   ├── docker-compose.prod.yml   # web, worker, db, redis, bugsink, caddy
-│   ├── Caddyfile
-│   └── .env.prod.example
-├── .github/workflows/{test,deploy}.yml
-├── Dockerfile
-├── docker-compose.yml            # local db + redis only
-├── mise.toml
-├── pyproject.toml
-├── .env.example
-└── .env (gitignored)
+config/
+  settings/
+    base.py         # env-driven core, INSTALLED_APPS, logging, redis, tasks
+    local.py        # dev delta (none — base.py already dev-safe)
+    production.py   # security, CSP, Bugsink, dbbackup
+    test.py         # locmem cache/email, immediate task backend
+  urls.py           # admin, django-rq, healthz/readyz
+  views.py          # liveness/readiness views
+  context_processors.py   # analytics context
+  wsgi.py / asgi.py        # -> config.settings.production
+jobs/                # only registered app — home of tasks.py + GDPR commands
+  tasks.py           # sample @task
+  management/commands/{export,delete}_user_data.py
+templates/
+  base.html          # minimal base template (frontend: none)
+  _analytics.html    # Umami snippet
+deploy/
+  docker-compose.prod.yml   # web, worker, db, redis, caddy, bugsink, umami
+  Caddyfile
+  .env.prod.example
+Dockerfile           # multi-stage build, target `prod`
+docker-compose.yml   # local db + redis only
+mise.toml
+.github/workflows/{test,deploy}.yml
 ```
 
 ## Key commands
 
 ```sh
-cp .env.example .env          # then set a real DJANGO_SECRET_KEY
-mise trust && mise install
+cp .env.example .env
+docker compose up -d
 mise run install
-docker compose up -d           # db + redis
 mise run migrate
 mise run superuser
-mise run dev                    # runserver
-mise run worker                 # rqworker default, in a second terminal
+mise run dev        # second terminal: mise run worker
 mise run test
 mise run lint
-mise run fmt
-mise run deploy                  # deploy-migrate then docker compose up -d, see deploy/
 ```
 
-Fallback without mise: `uv run manage.py <command>` for every task above.
+Deploy: push to `main` (needs `SSH_HOST` / `SSH_USER` / `SSH_KEY` / `GHCR_TOKEN` repo secrets). See `README.md` `## Deploy` for the first-time server setup and rollback commands.
