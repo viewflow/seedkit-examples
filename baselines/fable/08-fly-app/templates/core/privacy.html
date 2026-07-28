@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy &amp; your data{% endblock %}
+
+{% block content %}
+  <h1>Privacy &amp; your data</h1>
+  <p><a href="{% url 'privacy-export' %}">Download a copy of your data (JSON)</a></p>
+  <form method="post" action="{% url 'privacy-delete' %}"
+        onsubmit="return confirm('Delete your account and all associated data?');">
+    {% csrf_token %}
+    <button type="submit">Delete my account</button>
+  </form>
+{% endblock %}

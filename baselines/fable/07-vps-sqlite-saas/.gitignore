@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+
+# Django
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+staticfiles/
+media/
+
+# Environment
+.env
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mise.local.toml
+
+# OS
+.DS_Store
+
+# Deployment
+data/
+caddy_data/

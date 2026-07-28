@@ -1,0 +1,72 @@
+{% load static tailwind_cli %}<!DOCTYPE html>
+<html lang="en" data-theme="light" class="min-h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}{{ page_title|default:SITE_NAME }} · {{ SITE_NAME }}{% endblock %}</title>
+
+    {% block meta %}
+      <meta name="description" content="{% block meta_description %}{{ SITE_DESCRIPTION }}{% endblock %}">
+      <link rel="canonical" href="{{ SITE_URL }}{{ request.path }}">
+
+      <meta property="og:type" content="website">
+      <meta property="og:site_name" content="{{ SITE_NAME }}">
+      <meta property="og:title" content="{% block og_title %}{{ page_title|default:SITE_NAME }}{% endblock %}">
+      <meta property="og:description" content="{% block og_description %}{{ SITE_DESCRIPTION }}{% endblock %}">
+      <meta property="og:url" content="{{ SITE_URL }}{{ request.path }}">
+      <meta property="og:image" content="{{ SITE_URL }}{% static 'favicon.svg' %}">
+
+      <meta name="twitter:card" content="summary">
+      <meta name="twitter:title" content="{{ page_title|default:SITE_NAME }}">
+      <meta name="twitter:description" content="{{ SITE_DESCRIPTION }}">
+    {% endblock %}
+
+    <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+    {% tailwind_css %}
+    {% block extra_head %}{% endblock %}
+  </head>
+
+  <body class="min-h-screen bg-base-100 text-base-content flex flex-col">
+    {% block body %}
+    <header class="navbar bg-base-200 px-4">
+      <div class="flex-1">
+        <a href="{% url 'pages:index' %}" class="btn btn-ghost text-xl">{{ SITE_NAME }}</a>
+      </div>
+      <nav class="flex-none">
+        <ul class="menu menu-horizontal px-1 gap-1">
+          <li><a href="{% url 'shop:product-list' %}">Products</a></li>
+          {% if request.user.is_authenticated %}
+            <li><a href="{% url 'account_logout' %}">Sign out</a></li>
+          {% else %}
+            <li><a href="{% url 'account_login' %}">Sign in</a></li>
+            <li><a href="{% url 'account_signup' %}" class="btn btn-primary btn-sm">Sign up</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </header>
+
+    {% if messages %}
+      <div class="mx-auto w-full max-w-3xl px-4 pt-4 space-y-2">
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %}">
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <main class="flex-1 w-full">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer footer-center bg-base-200 text-base-content p-6 mt-12">
+      <aside>
+        <p>© {% now "Y" %} {{ SITE_NAME }}</p>
+      </aside>
+    </footer>
+    {% endblock body %}
+
+    {% block extra_body %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+}
+
+/* Tailwind scans these for class names. Paths are relative to this file. */
+@source "../../templates";
+@source "../../pages";
+@source "../../shop";
+@source "../../users";

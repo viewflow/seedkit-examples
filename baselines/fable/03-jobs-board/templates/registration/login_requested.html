@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Check your inbox" %}{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Check your inbox" %}</h1>
+  <p>{% translate "If an account with that email exists, we have sent you a magic login link." %}</p>
+{% endblock %}

@@ -1,0 +1,51 @@
+# List available recipes
+default:
+    @just --list
+
+# Start Postgres and Redis containers
+up:
+    docker compose up -d
+
+# Stop containers
+down:
+    docker compose down
+
+# Apply database migrations
+migrate:
+    uv run manage.py migrate
+
+# Create new migrations
+makemigrations:
+    uv run manage.py makemigrations
+
+# Run the development server
+run:
+    uv run manage.py runserver
+
+# Run a Celery worker
+worker:
+    uv run celery -A config worker -l info
+
+# Run the Celery Beat scheduler
+beat:
+    uv run celery -A config beat -l info
+
+# Run the test suite
+test:
+    uv run manage.py test
+
+# Create a superuser
+superuser:
+    uv run manage.py createsuperuser
+
+# Open a Django shell
+shell:
+    uv run manage.py shell
+
+# Collect translatable strings
+makemessages:
+    uv run manage.py makemessages --all
+
+# Compile translations
+compilemessages:
+    uv run manage.py compilemessages

@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /shop/checkout/
+Allow: /
+
+Sitemap: {{ SITE_URL }}/sitemap.xml

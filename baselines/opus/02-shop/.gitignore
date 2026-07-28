@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.venv/
+.python-version
+
+.env
+!.env.example
+
+# Collected and generated assets
+/staticfiles/
+/static/css/tailwind.css
+/.django_tailwind_cli/
+
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout cancelled · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="mx-auto w-full max-w-xl px-4 py-20 text-center">
+    <h1 class="text-3xl font-bold">Checkout cancelled</h1>
+    <p class="py-4 opacity-70">No payment was taken. Your basket is still where you left it.</p>
+    <a href="{% url 'shop:product-list' %}"><button class="btn btn-primary">Back to products</button></a>
+  </section>
+{% endblock %}

@@ -1,0 +1,19 @@
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# WhiteNoise serves /static/ from inside the app container, so everything
+	# goes to gunicorn. Caddy handles TLS and compression.
+	reverse_proxy web:8000
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

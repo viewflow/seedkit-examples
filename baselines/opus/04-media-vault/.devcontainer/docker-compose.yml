@@ -1,0 +1,28 @@
+# Merged on top of the project's docker-compose.yml by devcontainer.json.
+# Adds the workspace container and points it at the services by DNS name
+# instead of the host-published 127.0.0.1 ports.
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:/workspace:cached
+    working_dir: /workspace
+    command: sleep infinity
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.local
+      DATABASE_URL: postgres://postgres:postgres@db:5432/media_vault
+      REDIS_URL: redis://redis:6379/0
+      AWS_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_STORAGE_BUCKET_NAME: media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy

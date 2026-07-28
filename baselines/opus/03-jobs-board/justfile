@@ -1,0 +1,61 @@
+set dotenv-load := true
+
+# List available recipes.
+default:
+    @just --list
+
+# Install/refresh the virtualenv from the lockfile.
+install:
+    uv sync
+
+# Start Postgres and Redis.
+up:
+    docker compose up -d --wait
+
+# Stop the containers (keeps volumes).
+down:
+    docker compose down
+
+# Stop the containers and drop the data volume.
+reset:
+    docker compose down -v
+
+# Apply database migrations.
+migrate:
+    uv run manage.py migrate
+
+# Create new migrations for changed models.
+makemigrations:
+    uv run manage.py makemigrations
+
+# Run the development server.
+run:
+    uv run manage.py runserver
+
+# Create an admin account.
+superuser:
+    uv run manage.py createsuperuser
+
+# Run the test suite.
+test *ARGS:
+    uv run manage.py test {{ARGS}}
+
+# Run a Celery worker.
+worker:
+    uv run celery -A config worker -l info
+
+# Run Celery Beat (periodic task scheduler).
+beat:
+    uv run celery -A config beat -l info
+
+# Rebuild .po translation catalogues.
+messages:
+    uv run manage.py makemessages --all --ignore=.venv
+
+# Compile .po catalogues to .mo.
+compilemessages:
+    uv run manage.py compilemessages --ignore=.venv
+
+# Django's own deployment/system checks.
+check:
+    uv run manage.py check

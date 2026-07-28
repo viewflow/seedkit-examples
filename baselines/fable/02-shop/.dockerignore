@@ -1,0 +1,11 @@
+.git
+.venv
+.django_tailwind_cli
+__pycache__
+*.py[cod]
+staticfiles
+.pytest_cache
+.ruff_cache
+.env
+Caddyfile
+docker-compose.yml

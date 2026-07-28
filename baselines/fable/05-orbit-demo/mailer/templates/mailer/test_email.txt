@@ -1,0 +1,7 @@
+Test email
+==========
+
+This message was sent by `manage.py send_test_email` at {{ sent_at }}.
+
+If you can read this in Mailpit (or the console), the outbound mail flow works
+and django-orbit should have recorded it under the mail watcher.

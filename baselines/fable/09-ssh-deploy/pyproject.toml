@@ -1,0 +1,37 @@
+[project]
+name = "ssh-deploy"
+version = "0.1.0"
+description = "Production Django app deployed over SSH from GitHub Actions"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<7.0",
+    "django-csp>=4.0",
+    "django-dbbackup>=4.2",
+    "django-structlog>=9.0",
+    "django-tasks-rq>=0.2",
+    "gunicorn>=23.0",
+    "psycopg[binary]>=3.2",
+    "redis>=5.0",
+    "sentry-sdk[django]>=2.20",
+    "structlog>=25.1",
+    "whitenoise>=6.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+python_files = ["test_*.py"]
+addopts = "--ds=config.settings.test"

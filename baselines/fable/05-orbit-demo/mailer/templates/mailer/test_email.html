@@ -1,0 +1,12 @@
+{% extends "mailer/base_email.html" %}
+
+{% block content %}
+  <h1 style="margin:0 0 16px; font-size:20px; color:#111827;">Test email</h1>
+  <p style="margin:0 0 12px;">
+    This message was sent by <code>manage.py send_test_email</code> at {{ sent_at }}.
+  </p>
+  <p style="margin:0;">
+    If you can read this in Mailpit (or the console), the outbound mail flow works
+    and django-orbit should have recorded it under the <strong>mail</strong> watcher.
+  </p>
+{% endblock %}

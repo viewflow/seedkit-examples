@@ -1,0 +1,39 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[tasks.up]
+description = "Start local db + redis"
+run = "docker compose up -d"
+
+[tasks.down]
+description = "Stop local services"
+run = "docker compose down"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run manage.py migrate"
+
+[tasks.dev]
+description = "Run the development server"
+run = "uv run manage.py runserver"
+
+[tasks.worker]
+description = "Run the background task worker"
+run = "uv run manage.py rqworker default"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Ruff lint + format check"
+run = ["uv run ruff check .", "uv run ruff format --check ."]
+
+[tasks.fmt]
+description = "Auto-format and fix"
+run = ["uv run ruff check --fix .", "uv run ruff format ."]
+
+[tasks.backup]
+description = "Back up the database with django-dbbackup"
+run = "uv run manage.py dbbackup --clean"

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% translate "Open positions" %}</h1>
+  <ul>
+    {% for job in jobs %}
+      <li>
+        <a href="{{ job.get_absolute_url }}">{{ job.title }}</a>
+        &mdash; {{ job.company }}{% if job.location %}, {{ job.location }}{% endif %}
+      </li>
+    {% empty %}
+      <li>{% translate "No positions are open right now." %}</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

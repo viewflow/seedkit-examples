@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+.mise.toml
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+staticfiles
+media
+tests
+.github
+docker-compose.yml
+fly.toml
+README.md

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}silk-lab{% endblock %}</title>
+  </head>
+  <body>
+    {% block content %}{% endblock %}
+    {% if GOATCOUNTER_URL %}
+    <script data-goatcounter="{{ GOATCOUNTER_URL }}/count"
+            async src="{{ GOATCOUNTER_URL }}/count.js"></script>
+    {% endif %}
+  </body>
+</html>

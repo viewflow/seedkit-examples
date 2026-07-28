@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ job.title }}{% endblock %}
+
+{% block content %}
+  <h1>{{ job.title }}</h1>
+  <p>{{ job.company }}{% if job.location %} &middot; {{ job.location }}{% endif %}</p>
+  <p>{{ job.description|linebreaksbr }}</p>
+  <p>
+    {% blocktranslate with email=job.apply_email %}Apply at {{ email }}{% endblocktranslate %}
+  </p>
+  <p><a href="{% url 'jobs:list' %}">{% translate "Back to all jobs" %}</a></p>
+{% endblock %}

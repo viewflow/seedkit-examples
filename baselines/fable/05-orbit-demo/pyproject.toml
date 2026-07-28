@@ -1,0 +1,21 @@
+[project]
+name = "orbit-demo"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=6.0.7",
+    "django-orbit>=0.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 99
+extend-exclude = ["mailer/migrations"]
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B", "DJ"]

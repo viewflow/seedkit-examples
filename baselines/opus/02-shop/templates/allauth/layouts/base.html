@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% comment %}
+  allauth's leaf templates define a "content" block, so we cannot wrap them from
+  there. Instead we override the "body" block — which no allauth template touches —
+  and re-declare "content" inside our card, where the leaf template's version lands.
+{% endcomment %}
+
+{% block title %}{% block head_title %}Account{% endblock %} · {{ SITE_NAME }}{% endblock %}
+
+{% block body %}
+  <header class="navbar bg-base-200 px-4">
+    <div class="flex-1">
+      <a href="{% url 'pages:index' %}" class="btn btn-ghost text-xl">{{ SITE_NAME }}</a>
+    </div>
+  </header>
+
+  <main class="flex-1 w-full">
+    <section class="mx-auto w-full max-w-md px-4 py-12">
+      <div class="card bg-base-200 shadow-sm">
+        <div class="card-body gap-4 [&_h1]:text-2xl [&_h1]:font-bold [&_input]:input [&_input]:input-bordered [&_input[type=checkbox]]:checkbox [&_button]:btn [&_button]:btn-primary [&_a]:link [&_ul]:list-disc [&_ul]:pl-5">
+          {% if messages %}
+            <div class="space-y-2">
+              {% for message in messages %}
+                <div class="alert alert-info"><span>{{ message }}</span></div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% block content %}{% endblock %}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer footer-center bg-base-200 text-base-content p-6 mt-12">
+    <aside><p>© {% now "Y" %} {{ SITE_NAME }}</p></aside>
+  </footer>
+{% endblock body %}

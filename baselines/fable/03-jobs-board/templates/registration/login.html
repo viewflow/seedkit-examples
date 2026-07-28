@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Log in" %}{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Log in" %}</h1>
+  <p>{% translate "Enter your email address and we will send you a magic login link." %}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">{% translate "Send login link" %}</button>
+  </form>
+{% endblock %}

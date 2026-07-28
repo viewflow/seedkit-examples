@@ -1,0 +1,62 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[env]
+_.file = ".env"
+
+[tasks.install]
+description = "Install/sync all dependencies"
+run = "uv sync"
+
+[tasks.dev]
+description = "Run the development server"
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run manage.py migrate"
+
+[tasks.makemigrations]
+description = "Create new database migrations"
+run = "uv run manage.py makemigrations"
+
+[tasks.shell]
+description = "Open a Django shell"
+run = "uv run manage.py shell"
+
+[tasks.superuser]
+description = "Create a superuser"
+run = "uv run manage.py createsuperuser"
+
+[tasks.css]
+description = "Build the Tailwind stylesheet once"
+run = "uv run manage.py tailwind build"
+
+[tasks.watch]
+description = "Watch and rebuild the Tailwind stylesheet"
+run = "uv run manage.py tailwind watch"
+
+[tasks.lint]
+description = "Lint with Ruff"
+run = "uv run ruff check ."
+
+[tasks.format]
+description = "Format with Ruff"
+run = ["uv run ruff format .", "uv run ruff check --fix ."]
+
+[tasks.typecheck]
+description = "Type-check with pyright"
+run = "uv run pyright"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
+
+[tasks.check]
+description = "Lint, type-check and test"
+depends = ["lint", "typecheck", "test"]
+
+[tasks.resetdb]
+description = "Drop and recreate the local database"
+run = ["dropdb --if-exists shop_db", "createdb shop_db", "uv run manage.py migrate"]

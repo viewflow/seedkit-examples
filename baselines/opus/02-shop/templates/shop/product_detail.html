@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} · {{ SITE_NAME }}{% endblock %}
+{% block og_title %}{{ product.name }}{% endblock %}
+{% block meta_description %}{{ product.description|truncatewords:30 }}{% endblock %}
+{% block og_description %}{{ product.description|truncatewords:30 }}{% endblock %}
+
+{% block content %}
+  <section class="mx-auto w-full max-w-3xl px-4 py-12">
+    <nav class="breadcrumbs text-sm mb-6">
+      <ul>
+        <li><a href="{% url 'pages:index' %}">Home</a></li>
+        <li><a href="{% url 'shop:product-list' %}">Products</a></li>
+        <li>{{ product.name }}</li>
+      </ul>
+    </nav>
+
+    <h1 class="text-3xl font-bold">{{ product.name }}</h1>
+    <p class="mt-2 font-mono text-2xl">{{ product.price }} {{ STRIPE_CURRENCY|default:"USD"|upper }}</p>
+    <div class="prose mt-6 max-w-none">{{ product.description|linebreaks }}</div>
+
+    <form method="post" action="{% url 'shop:start-checkout' product.slug %}" class="mt-8 space-y-4">
+      {% csrf_token %}
+      {% if not request.user.is_authenticated %}
+        <label class="form-control w-full max-w-xs">
+          <span class="label-text">E-mail for the receipt</span>
+          <input type="email" name="email" required class="input input-bordered w-full max-w-xs">
+        </label>
+      {% endif %}
+      <button type="submit" class="btn btn-primary">Buy now</button>
+    </form>
+  </section>
+{% endblock %}

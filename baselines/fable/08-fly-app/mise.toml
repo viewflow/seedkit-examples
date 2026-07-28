@@ -1,0 +1,40 @@
+[tools]
+python = "3.12"
+uv = "latest"
+
+[tasks.setup]
+description = "Install dependencies and start local services"
+run = ["uv sync", "docker compose up -d"]
+
+[tasks.migrate]
+description = "Apply database migrations"
+run = "uv run manage.py migrate"
+
+[tasks.dev]
+description = "Run the Django development server"
+run = "uv run manage.py runserver"
+
+[tasks.worker]
+description = "Run the Celery worker"
+run = "uv run celery -A config worker -l info"
+
+[tasks.beat]
+description = "Run the Celery beat scheduler"
+run = "uv run celery -A config beat -l info"
+
+[tasks.bolt]
+description = "Run the django-bolt API server (fast-path settings)"
+env = { DJANGO_SETTINGS_MODULE = "config.settings.bolt" }
+run = "uv run manage.py runbolt --dev --port 8001"
+
+[tasks.test]
+description = "Run the test suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Ruff lint + format check"
+run = ["uv run ruff check .", "uv run ruff format --check ."]
+
+[tasks.typecheck]
+description = "Run pyright"
+run = "uv run pyright"

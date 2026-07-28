@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}{{ SITE_NAME }} · Well-made things, sensibly priced{% endblock %}
+{% block og_title %}{{ SITE_NAME }} — well-made things, sensibly priced{% endblock %}
+
+{% block content %}
+  <section class="hero py-20">
+    <div class="hero-content text-center">
+      <div class="max-w-2xl">
+        <h1 class="text-4xl font-bold text-blue-600">Welcome to {{ SITE_NAME }}</h1>
+        <p class="py-6 text-lg opacity-80">{{ SITE_DESCRIPTION }}</p>
+        <a href="{% url 'shop:product-list' %}">
+          <button class="btn btn-primary">Browse the shop</button>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  {% if products %}
+    <section class="mx-auto w-full max-w-5xl px-4 pb-16">
+      <h2 class="text-2xl font-semibold mb-6">Latest arrivals</h2>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {% for product in products %}
+          <article class="card bg-base-200 shadow-sm">
+            <div class="card-body">
+              <h3 class="card-title">{{ product.name }}</h3>
+              <p class="opacity-70">{{ product.description|truncatewords:18 }}</p>
+              <div class="card-actions items-center justify-between pt-2">
+                <span class="font-mono text-lg">{{ product.price }}</span>
+                <a href="{{ product.get_absolute_url }}" class="btn btn-sm btn-outline">Details</a>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Page not found · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="hero py-24">
+    <div class="hero-content text-center">
+      <div class="max-w-md">
+        <p class="font-mono text-6xl font-bold opacity-30">404</p>
+        <h1 class="mt-4 text-3xl font-bold">We couldn't find that page</h1>
+        <p class="py-4 opacity-70">The link may be out of date, or the page may have moved.</p>
+        <a href="{% url 'pages:index' %}"><button class="btn btn-primary">Back to the shop</button></a>
+      </div>
+    </div>
+  </section>
+{% endblock %}

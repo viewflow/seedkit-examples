@@ -1,0 +1,53 @@
+[project]
+name = "shop"
+version = "0.1.0"
+description = "Small e-commerce site with admin and SMTP transactional email."
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<6.0",
+    "django-allauth>=65.0",
+    "django-axes>=8.0",
+    "django-browser-reload>=1.18",
+    "django-tailwind-cli>=4.2",
+    "gunicorn>=23.0",
+    "psycopg[binary]>=3.2",
+    "stripe>=12.0",
+    "whitenoise>=6.9",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2",
+    "pyright>=1.1.400",
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "ruff>=0.12",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+"config/settings/*" = ["F403", "F405"]
+"**/migrations/*" = ["E501"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+include = ["config", "pages", "users", "tests", "manage.py"]
+exclude = ["**/migrations"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.local"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+addopts = "-q"

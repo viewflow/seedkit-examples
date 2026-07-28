@@ -1,0 +1,16 @@
+.venv/
+.git/
+.github/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+staticfiles/
+backups/
+media/
+.env
+.env.*
+db.sqlite3
+Dockerfile
+docker-compose*.yml
+README.md

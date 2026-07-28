@@ -1,0 +1,19 @@
+{$DOMAIN} {
+	encode zstd gzip
+
+	# Media uploads live on the shared volume; Caddy serves them directly.
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# Everything else (incl. static, via WhiteNoise) goes to gunicorn.
+	handle {
+		reverse_proxy web:8000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,50 @@
+[tools]
+python = "3.14"
+uv = "latest"
+
+[tasks.install]
+description = "Install dependencies and pre-commit hooks"
+run = ["uv sync", "uv run pre-commit install"]
+
+[tasks.dev]
+description = "Run the development server"
+run = "uv run manage.py runserver"
+
+[tasks.migrate]
+description = "Apply database migrations and create the cache table"
+run = [
+    "uv run manage.py migrate",
+    "uv run manage.py createcachetable --database cache",
+]
+
+[tasks.worker]
+description = "Run the Django Tasks database worker"
+run = "uv run manage.py db_worker"
+
+[tasks.test]
+description = "Run the test-suite"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint and format-check with ruff"
+run = ["uv run ruff check .", "uv run ruff format --check ."]
+
+[tasks.fmt]
+description = "Auto-format with ruff"
+run = ["uv run ruff check --fix .", "uv run ruff format ."]
+
+[tasks.typecheck]
+description = "Type-check with pyright"
+run = "uv run pyright"
+
+[tasks.check]
+description = "Run all checks: lint, types, tests"
+depends = ["lint", "typecheck", "test"]
+
+[tasks."docker:build"]
+description = "Build the production image"
+run = "docker build --target prod -t vps-sqlite-saas ."
+
+[tasks."docker:up"]
+description = "Run the production stack locally"
+run = "docker compose -f docker-compose.prod.yml up --build"

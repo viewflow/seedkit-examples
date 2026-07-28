@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Account locked · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+  <section class="mx-auto w-full max-w-md px-4 py-16 text-center">
+    <h1 class="text-3xl font-bold">Too many sign-in attempts</h1>
+    <p class="py-4 opacity-70">
+      This account has been locked for a while as a precaution. Try again later, or reset
+      your password.
+    </p>
+    <a href="{% url 'account_reset_password' %}"><button class="btn btn-primary">Reset password</button></a>
+  </section>
+{% endblock %}

@@ -1,0 +1,69 @@
+# Production stack for the self-hosted deploy target.
+# Expects an .env file next to this compose file on the server providing at
+# least: WEB_IMAGE, DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS, POSTGRES_PASSWORD.
+services:
+  web:
+    image: ${WEB_IMAGE:?set WEB_IMAGE in .env, e.g. ghcr.io/OWNER/09-ssh-deploy:latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CACHE_REDIS_URL: redis://redis:6379/1
+    ports:
+      - "127.0.0.1:8000:8000"  # reverse proxy (nginx/caddy on the host) in front
+    volumes:
+      - backups:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: ${WEB_IMAGE:?set WEB_IMAGE in .env}
+    restart: unless-stopped
+    command: python manage.py rqworker default
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379/0
+      CACHE_REDIS_URL: redis://redis:6379/1
+    volumes:
+      - backups:/app/backups
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app} -d ${POSTGRES_DB:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  backups:
