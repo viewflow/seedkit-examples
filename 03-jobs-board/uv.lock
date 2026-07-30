@@ -11,7 +11,6 @@ dependencies = [
     { name = "django" },
     { name = "django-environ" },
     { name = "django-mail-auth" },
-    { name = "django-redis" },
     { name = "psycopg", extra = ["binary"] },
 ]
 
@@ -21,7 +20,6 @@ requires-dist = [
     { name = "django", specifier = ">=6.0,<7.0" },
     { name = "django-environ", specifier = ">=0.14.0" },
     { name = "django-mail-auth", specifier = ">=3.5.5" },
-    { name = "django-redis", specifier = ">=7.0.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.4" },
 ]
 
@@ -171,20 +169,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/32/617d33f91d34dfc90303b5c6170b86d33a746fafcda9c71b4ec6efff2e1a/django_mail_auth-3.5.5.tar.gz", hash = "sha256:b8095836d4142231f8106fa43be04e1adef426a1c88c8194b75025b517c77c0b", size = 17290, upload-time = "2025-12-18T23:53:42.262Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/7e/c258103bc18a2516e9742000c9f39cd5c796b3bf8a01ccd6bf1cb083d825/django_mail_auth-3.5.5-py3-none-any.whl", hash = "sha256:708ebecb44c60a2718ea38b06dea44b1b6f3a47bf026cd6149c33e70888f4765", size = 26742, upload-time = "2025-12-18T23:53:40.804Z" },
-]
-
-[[package]]
-name = "django-redis"
-version = "7.0.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "django" },
-    { name = "redis" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/78/203a0cdc0f1c083a5407d01f77b58099a120bb8a5a04562f56a9bb341314/django_redis-7.0.0.tar.gz", hash = "sha256:e48491c862f4350b0747ceb1016700686fb93c4f4e0fb9c490fe6c6658ffd933", size = 64601, upload-time = "2026-06-02T14:17:48.819Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/9f/09cdb9a1eebe8533b02a7694ca787acfc1e4d93b5b6175ff99366d4e6d64/django_redis-7.0.0-py3-none-any.whl", hash = "sha256:4b23aa6e0cd0937bb1242e9a463809e6004de3ca2150f34e986306bb6220d688", size = 38932, upload-time = "2026-06-02T14:17:47.281Z" },
 ]
 
 [[package]]

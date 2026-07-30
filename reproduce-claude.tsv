@@ -1,0 +1,10 @@
+case	arm	cli	model	verdict	gaps	duration_s	tool_calls	run_at
+01-minimal-blog	skill	claude	claude-opus-5	PASS	1	76	11	2026-07-28T08:21Z
+02-shop	skill	claude	claude-opus-5	PASS	1	109	15	2026-07-28T08:23Z
+03-jobs-board	skill	claude	claude-opus-5	PASS	1	153	15	2026-07-28T08:26Z
+04-media-vault	skill	claude	claude-opus-5	PASS	1	132	19	2026-07-28T08:28Z
+05-orbit-demo	skill	claude	claude-opus-5	PASS	1	84	13	2026-07-28T08:29Z
+06-silk-lab	skill	claude	claude-opus-5	PASS	1	89	14	2026-07-28T08:31Z
+07-vps-sqlite-saas	skill	claude	claude-opus-5	PASS	6	141	18	2026-07-28T08:33Z
+08-fly-app	skill	claude	claude-opus-5	PASS	2	94	16	2026-07-28T08:35Z
+09-ssh-deploy	skill	claude	claude-opus-5	PASS	1	104	17	2026-07-28T08:36Z

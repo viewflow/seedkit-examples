@@ -1,26 +1,22 @@
+dc := "docker compose exec -T web"
+
 install:
-    uv sync
+    docker compose build
 
 dev:
-    uv run manage.py runserver
+    docker compose up
 
 migrate:
-    uv run manage.py migrate
+    {{dc}} python manage.py migrate
 
 makemigrations:
-    uv run manage.py makemigrations
-
-shell:
-    uv run manage.py shell
-
-superuser:
-    uv run manage.py createsuperuser
+    {{dc}} python manage.py makemigrations
 
 test:
-    uv run manage.py test
+    {{dc}} python manage.py test
 
-worker:
-    DJANGO_SETTINGS_MODULE=config.settings uv run celery -A config worker -l info
+shell:
+    docker compose exec web python manage.py shell
 
-beat:
-    DJANGO_SETTINGS_MODULE=config.settings uv run celery -A config beat -l info
+superuser:
+    docker compose exec web python manage.py createsuperuser
