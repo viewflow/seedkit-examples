@@ -2,7 +2,7 @@
 
 Reference Django projects scaffolded by the [seedkit](https://github.com/viewflow/seedkit) skill, paired with the prompts that produced them.
 
-Each subdirectory is a fresh project generated end-to-end by `claude -p` running the matching testcase from `seedkit/testcases/`. The first section of every project's `README.md` is the verbatim `/django-seedkit` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible.
+Each subdirectory is a fresh project generated end-to-end by `claude -p` running the matching testcase from the skill repo's `testcases/`. The first section of every project's `README.md` is the verbatim `/django-seedkit` prompt — answers to every Foundation / add-on / production question — so the exact configuration is reproducible.
 
 ## Projects
 
@@ -18,10 +18,10 @@ Each subdirectory is a fresh project generated end-to-end by `claude -p` running
 
 ## Reproducing
 
-From the parent repo:
+The harness lives in `train/` and reads the skill and testcases from a sibling `seedkit` checkout (override with `$SEEDKIT`):
 
 ```sh
-cd seedkit/train
+cd train
 ./run-tests.sh                  # all cases
 ./run-tests.sh 02 07            # specific cases
 ```

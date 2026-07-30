@@ -1,4 +1,4 @@
-# Per-run logs and harness artefacts — written by seedkit/run-tests.sh,
+# Per-run logs and harness artefacts — written by train/run-tests.sh,
 # never published.
 logs/
 .claude/
@@ -27,6 +27,9 @@ logs/
 
 # Local env files. Each project ships .env.example; .env is per-developer.
 **/.env
+
+# Demo GIF re-recording scratch (train/demo/README.md).
+train/demo/seedkit-demo.gif
 
 # Harness lock — one run per workspace (train/agents.sh).
 .harness-lock/
