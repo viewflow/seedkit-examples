@@ -30,7 +30,7 @@
 #
 #   ./run-baseline.sh                       # all testcases → baselines/sonnet/
 #   ./run-baseline.sh 02 07                 # specific ones (matched by NN prefix)
-#   MODEL=claude-opus-5 ./run-baseline.sh   # → baselines/opus/
+#   MODEL=claude-opus-5-5 ./run-baseline.sh   # → baselines/opus/
 #   BASELINE_CLI=codex ./run-baseline.sh    # or agy
 #
 # Requires: jq, python3, and whichever CLI $BASELINE_CLI names.
@@ -62,14 +62,14 @@ LOGS="$WORKSPACE/logs/baselines"
 SCORECARD="$SCRIPT_DIR/scorecard.md"
 BASELINE_CLI="${BASELINE_CLI:-claude}"
 case "$BASELINE_CLI" in
-    claude) DEFAULT_MODEL="claude-sonnet-5" ;;
-    agy) DEFAULT_MODEL="gemini-3.5-flash" ;;
+    claude) DEFAULT_MODEL="claude-sonnet-5-5" ;;
+    agy) DEFAULT_MODEL="gemini-3.8-flash" ;;
     codex) DEFAULT_MODEL="" ;;  # let the CLI apply its own default
     *) echo "BASELINE_CLI must be one of: claude codex agy (got: $BASELINE_CLI)" >&2; exit 1 ;;
 esac
 MODEL="${MODEL:-$DEFAULT_MODEL}"
 BASELINE_ROOT="${BASELINE_ROOT:-$WORKSPACE/baselines/$(model_slug "$MODEL")}"
-SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5}"
+SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5-5}"
 # Match run-tests.sh's per-phase ceiling — a control arm on half the
 # budget produces truncated projects that read as "the unaided agent did
 # worse" when the real cause was the watchdog.

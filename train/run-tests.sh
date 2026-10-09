@@ -20,9 +20,9 @@
 # Usage (run from inside seedkit-examples/train/):
 #   ./run-tests.sh                          # run all testcases (claude build)
 #   ./run-tests.sh 02 07                    # run specific ones
-#   MODEL=claude-opus-5 ./run-tests.sh    # override build model
+#   MODEL=claude-opus-5-5 ./run-tests.sh    # override build model
 #   BUILD_CLI=codex MODEL=gpt-5.2-codex ./run-tests.sh
-#   BUILD_CLI=agy ./run-tests.sh            # build with Antigravity (gemini-3.5-flash)
+#   BUILD_CLI=agy ./run-tests.sh            # build with Antigravity (gemini-3.8-flash)
 #
 # Requires: claude CLI (always, for the review phase), jq, python3, and
 # whichever CLI $BUILD_CLI names.
@@ -45,14 +45,14 @@ TESTCASES="$SEEDKIT/testcases"
 LOGS="$WORKSPACE/logs"
 BUILD_CLI="${BUILD_CLI:-claude}"
 case "$BUILD_CLI" in
-    claude) DEFAULT_BUILD_MODEL="claude-sonnet-5" ;;
-    agy) DEFAULT_BUILD_MODEL="gemini-3.5-flash" ;;
+    claude) DEFAULT_BUILD_MODEL="claude-sonnet-5-5" ;;
+    agy) DEFAULT_BUILD_MODEL="gemini-3.8-flash" ;;
     codex) DEFAULT_BUILD_MODEL="" ;;  # let the CLI apply its own default
     *) echo "BUILD_CLI must be one of: claude codex agy (got: $BUILD_CLI)" >&2; exit 1 ;;
 esac
 MODEL="${MODEL:-$DEFAULT_BUILD_MODEL}"
-REVIEW_MODEL="${REVIEW_MODEL:-claude-opus-5}"
-SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5}"
+REVIEW_MODEL="${REVIEW_MODEL:-claude-opus-5-5}"
+SCORECARD_MODEL="${SCORECARD_MODEL:-claude-opus-5-5}"
 SCORECARD="$SCRIPT_DIR/scorecard.md"
 # Hard ceiling per phase. The build phase occasionally improvises a bash
 # command that orphans a forking child tree under PID 1; bash's `wait`

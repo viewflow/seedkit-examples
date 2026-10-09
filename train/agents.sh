@@ -333,7 +333,7 @@ count_rewrites() {
 
 # model_slug <model-id> — the directory name a model's baselines live under.
 #
-#   claude-sonnet-5 → sonnet     gemini-3.5-flash → gemini-3.5-flash
+#   claude-sonnet-5-5 → sonnet   gemini-3.8-flash → gemini-3.8-flash
 #
 # Baselines are per-model (baselines/sonnet/, baselines/opus/) so a second
 # model's control arm lands beside the first instead of overwriting it. An
@@ -341,8 +341,8 @@ count_rewrites() {
 model_slug() {
     local m=${1:-}
     [[ -z "$m" ]] && { printf 'default'; return; }
-    m=${m#claude-}          # claude-sonnet-5 → sonnet-5
-    m=$(printf '%s' "$m" | sed -E 's/-[0-9]+(\.[0-9]+)?$//')
+    m=${m#claude-}          # claude-sonnet-5-5 → sonnet-5-5
+    m=$(printf '%s' "$m" | sed -E 's/(-[0-9]+)+$//')
     printf '%s' "$m"
 }
 

@@ -29,7 +29,7 @@
 #   ./run-reproduce.sh                       # every case, skill arm
 #   ./run-reproduce.sh 02 07                 # specific ones
 #   ARM=baseline ./run-reproduce.sh          # control arm, baselines/sonnet/
-#   ARM=baseline MODEL=claude-opus-5 ./run-reproduce.sh
+#   ARM=baseline MODEL=claude-opus-5-5 ./run-reproduce.sh
 #
 # Requires: claude CLI, jq, python3, git, and whatever the projects need
 # (uv, docker) — a missing project dependency is reported as BLOCKED, not
@@ -45,7 +45,7 @@ WORKSPACE="$(cd "$WORKSPACE" && pwd)"
 LOGS="$WORKSPACE/logs/reproduce"
 ARM="${ARM:-skill}"
 REPRODUCE_CLI="${REPRODUCE_CLI:-claude}"
-MODEL="${MODEL:-claude-opus-5}"
+MODEL="${MODEL:-claude-opus-5-5}"
 # Long: a reproduce run installs dependencies, pulls images, and boots
 # services. Most of that is network and disk, not agent turns.
 TIMEOUT_PER_CASE="${TIMEOUT_PER_CASE:-3600}"

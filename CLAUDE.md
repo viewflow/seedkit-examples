@@ -56,7 +56,7 @@ and keep `train` in the index's skip list.
 instruction, no skill. The two arms must differ in one variable only, so anything given to one is given
 to both.
 
-- Output goes to `baselines/<model>/<case>/` — `model_slug()` in `agents.sh` turns `claude-sonnet-5`
+- Output goes to `baselines/<model>/<case>/` — `model_slug()` in `agents.sh` turns `claude-sonnet-5-5`
   into `sonnet` — so the control arm publishes with the skill arm and each model's control sits beside
   the others instead of overwriting them. That sits under the `.claude/skills/django-seedkit` symlink
   `run-tests.sh` creates, so `unlink_skill()` removes the project-scoped symlinks before the run and
